@@ -8,7 +8,7 @@ typedef struct statistics{
   uint64_t Ua;  //max
   uint64_t Fa; //plithos
   uint64_t Da; //distinct
-  bool *Da_array;
+  bool *Da_array; 
   int max_case;
 
 }statistics;

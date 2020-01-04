@@ -4,7 +4,7 @@
 #include "stats.h"
 #define DONE "Done"
 
-
+ 
 
 int main(int argc, char *argv[]){
   char *workload_file, *directory,*query_file, done[20];
@@ -15,6 +15,7 @@ int main(int argc, char *argv[]){
   take_arguments(argc, argv, &workload_file, &directory,&query_file);
 
   relation_number = create_init_relations(directory, workload_file, &array,&stats_array);
+  /*
   for(int i=0;i < 1;i++){
     for(int j=0;j<1;j++){//stats_array[i].columns
     //  printf("min=%lu,max=%lu,pli8os=%lu\n",stats_array[i].stats[j].Ia,stats_array[i].stats[j].Ua,stats_array[i].stats[j].Fa);
@@ -23,6 +24,7 @@ int main(int argc, char *argv[]){
     }
   }
   exit(0);
+  */
 
   int rep = 0;
   do{
@@ -36,7 +38,7 @@ int main(int argc, char *argv[]){
       rep++;
   }while(strcmp(DONE, done));
 
-  read_queries(query_file,&array,relation_number);
+  read_queries(query_file,&array,relation_number, stats_array);
 
   delete_all_array(&array, relation_number, &directory, &workload_file,&query_file);
   return 0;

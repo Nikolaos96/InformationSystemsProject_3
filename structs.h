@@ -6,7 +6,7 @@
 
 typedef struct tuple{
         uint64_t key;
-        uint64_t payload;
+        uint64_t payload; 
 }tuple;
 
 typedef struct relation{

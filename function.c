@@ -2,7 +2,7 @@
 #include "function.h"
 #include "sort_join.h"
 #include "join_list.h"
-#include "mid_list.h"
+#include "mid_list.h" 
 #include "HashTable.h"
 #define  BYTEPOS  7
 #define HASH_TABLE_SIZE 10000
@@ -125,6 +125,8 @@
        (*stats_array)[i].stats[0].Ia=1000000000;
        (*stats_array)[i].stats[0].Ua=0;
        (*stats_array)[i].stats[0].max_case=0;
+       (*stats_array)[i].stats[0].Fa=0;
+       (*stats_array)[i].stats[0].Da=0;
 
        (*stats_array)[i].tuples=(*array)[i].num_tuples;
        (*stats_array)[i].columns=(*array)[i].num_columns;
@@ -135,6 +137,8 @@
             (*stats_array)[i].stats[index].Ia=1000000000;
             (*stats_array)[i].stats[index].Ua=0;
             (*stats_array)[i].stats[index].max_case=0;
+            (*stats_array)[i].stats[index].Fa=0;
+            (*stats_array)[i].stats[index].Da=0;
 
           }
           counter++;
@@ -163,6 +167,8 @@
        }
        index=0;counter=0;
        uint64_t pos;
+
+
        for(int j = 0 ; j < ((*array)[i].num_tuples * (*array)[i].num_columns) ; j++){
           if(counter == (*array)[i].num_tuples ){
             index++;
@@ -173,12 +179,33 @@
 	       // fread(&x, sizeof(x), 1, fp);
           //printf("x==%lu\n",x);
           pos=(*stats_array)[i].stats[index].Ia;
-          if((*stats_array)[i].stats[j].max_case==1) //true tin katallili 8esi tou pinaka,analoga to max_case
+          if((*stats_array)[i].stats[index].max_case==1) //true tin katallili 8esi tou pinaka,analoga to max_case
             (*stats_array)[i].stats[index].Da_array[(x-pos) % MAX_N]=true;
           else
             (*stats_array)[i].stats[index].Da_array[x-pos]=true;
 
        }
+
+
+
+       int Da_array_size = 0;
+       for(int j = 0; j < (*array)[i].num_columns; j++) {
+          if((*stats_array)[i].stats[j].max_case == 0) {
+              Da_array_size = ((*stats_array)[i].stats[j].Ua-(*stats_array)[i].stats[j].Ia +1);
+          }
+          else {
+              Da_array_size = MAX_N;
+          }
+
+          for(int k = 0; k < Da_array_size; k++) {
+            if((*stats_array)[i].stats[j].Da_array[k]==true) {
+                (*stats_array)[i].stats[j].Da++;
+            }
+          }
+
+       }
+
+
 
        (*array)[i].index[0] = 0;
        for(int j = 1 ; j < (*array)[i].num_columns ; j++)
@@ -1198,7 +1225,103 @@ void take_checksums(checksum_struct *checksums,int number_of_checksums,char* que
 
 
 
- void read_queries(char *query_file,main_array **array,int relation_number){
+void orderOfPredicates(q* predicates, int number_of_predicates, statistics_array ** stats_array, int* tables, int relation_number) {
+
+  statistics_array** stats_array_temp;
+
+  int relationNum = 0;
+  for(int i = 0; i < relation_number; i++) {
+      if(tables[i] != -1) {
+        relationNum++;
+      }
+  }
+
+  *stats_array_temp=malloc(relationNum * sizeof(statistics_array));
+
+
+  for(int i = 0; i < relationNum; i++) {
+    (*stats_array_temp)[i].stats = malloc(stats_array[i]->columns * sizeof(statistics));
+
+    for(int j = 0; j < stats_array[i]->columns; j++) {
+      (*stats_array_temp)[i].stats[j].Ia = stats_array[i]->stats[j].Ia;
+      (*stats_array_temp)[i].stats[j].Ua = stats_array[i]->stats[j].Ua;
+      (*stats_array_temp)[i].stats[j].Fa = stats_array[i]->stats[j].Fa;
+      (*stats_array_temp)[i].stats[j].Da = stats_array[i]->stats[j].Da;
+      (*stats_array_temp)[i].stats[j].max_case = stats_array[i]->stats[j].max_case;
+
+
+      int Da_array_size;
+
+      if((*stats_array_temp)[i].stats[j].max_case == 1) {
+        Da_array_size = (*stats_array_temp)[i].stats[j].Ua - (*stats_array_temp)[i].stats[j].Ia + 1;
+      }
+      else {
+        Da_array_size = MAX_N;
+      }
+
+
+      (*stats_array_temp)[i].stats[j].Da_array = malloc(Da_array_size * sizeof(bool));
+
+      for(int k = 0; k < Da_array_size; k++) {
+          (*stats_array_temp)[i].stats[j].Da_array[k] = stats_array[i]->stats[j].Da_array[k];
+      }
+
+      
+    }
+
+
+  }
+
+
+
+
+  for(int i = 0; i < number_of_predicates; i++) {
+
+    if(predicates[i].join == false) {     // it is a filter
+
+        if(predicates[i].relationB == 0) {   // filtro =
+            
+            int rel = tables[predicates[i].relationA];
+
+            (*stats_array_temp)[rel].stats[predicates[i].columnA].Ia = predicates[i].columnB;
+            (*stats_array_temp)[rel].stats[predicates[i].columnA].Ua = predicates[i].columnB;
+            
+
+            int pos = predicates[i].columnB - (*stats_array_temp)[rel].stats[predicates[i].columnA].Ia;
+
+            if((*stats_array_temp)[rel].stats[predicates[i].columnA].max_case == 1) {
+                pos = pos % MAX_N;
+            }
+
+            if((*stats_array_temp)[rel].stats[predicates[i].columnA].Da_array[pos] == true) {
+              (*stats_array_temp)[rel].stats[predicates[i].columnA].Da = 1;
+              (*stats_array_temp)[rel].stats[predicates[i].columnA].Fa /= (*stats_array_temp)[rel].stats[predicates[i].columnA].Da;
+            }
+            else {
+              (*stats_array_temp)[rel].stats[predicates[i].columnA].Da = 0;
+              (*stats_array_temp)[rel].stats[predicates[i].columnA].Fa = 0;
+            }
+
+          
+            
+
+        }
+        else if(predicates[i].relationB == 1) {   // filtro >
+
+        }
+        else if(predicates[i].relationB == 2) {     // filtro <
+          
+        }
+
+    }
+
+
+  }
+
+
+}
+
+ void read_queries(char *query_file,main_array **array,int relation_number, statistics_array **stats_array){
    char *query, query2[100];
    size_t len = 0;
    clock_t time;
@@ -1242,6 +1365,9 @@ void take_checksums(checksum_struct *checksums,int number_of_checksums,char* que
         take_predicates(predicates, number_of_predicates, query2);  // edw exoume ena pinaka apo ta predicate tou query
         strcpy(query2, query);
 
+
+        orderOfPredicates(predicates, number_of_predicates, stats_array, tables, relation_number );
+
         //checksum
         int number_of_checksums=find_checksum_number(query2);
         checksum_struct *checksums = malloc(number_of_checksums * sizeof(checksum_struct));
@@ -1267,6 +1393,9 @@ void take_checksums(checksum_struct *checksums,int number_of_checksums,char* que
 
    return;
  }
+
+
+
 
 
 
