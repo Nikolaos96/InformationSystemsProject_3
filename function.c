@@ -1275,16 +1275,20 @@ void orderOfPredicates(q* predicates, int number_of_predicates, statistics_array
 
 
 
-  for(int i = 0; i < number_of_predicates; i++) {
+  for(int i = number_of_predicates - 1; i >= 0; i--) {
 
     if(predicates[i].join == false) {     // it is a filter
 
         if(predicates[i].relationB == 0) {   // filtro =
             
-            int rel = tables[predicates[i].relationA];
 
-            (*stats_array_temp)[rel].stats[predicates[i].columnA].Ia = predicates[i].columnB;
-            (*stats_array_temp)[rel].stats[predicates[i].columnA].Ua = predicates[i].columnB;
+            // gia thn stili A
+            int rel = tables[predicates[i].relationA];
+            int filter = predicates[i].columnB;
+
+
+            (*stats_array_temp)[rel].stats[predicates[i].columnA].Ia = filter;
+            (*stats_array_temp)[rel].stats[predicates[i].columnA].Ua = filter;
             
 
             int pos = predicates[i].columnB - (*stats_array_temp)[rel].stats[predicates[i].columnA].Ia;
@@ -1293,25 +1297,141 @@ void orderOfPredicates(q* predicates, int number_of_predicates, statistics_array
                 pos = pos % MAX_N;
             }
 
+            uint64_t Da = (*stats_array_temp)[rel].stats[predicates[i].columnA].Da;
+
             if((*stats_array_temp)[rel].stats[predicates[i].columnA].Da_array[pos] == true) {
               (*stats_array_temp)[rel].stats[predicates[i].columnA].Da = 1;
-              (*stats_array_temp)[rel].stats[predicates[i].columnA].Fa /= (*stats_array_temp)[rel].stats[predicates[i].columnA].Da;
+              (*stats_array_temp)[rel].stats[predicates[i].columnA].Fa /= Da;
             }
             else {
               (*stats_array_temp)[rel].stats[predicates[i].columnA].Da = 0;
               (*stats_array_temp)[rel].stats[predicates[i].columnA].Fa = 0;
             }
 
+            // gia opoiadhpote allh stili C
+
+            for(int j = 0; j < (*stats_array_temp)[rel].columns; j++) {
+
+                
+                uint64_t Fa1 = (*stats_array_temp)[rel].stats[predicates[i].columnA].Fa;
+                if(j != predicates[i].columnA) {    // prepei na einai diaforetiki stili apo thn A
+                  (*stats_array_temp)[rel].stats[j].Fa = (*stats_array_temp)[rel].stats[predicates[i].columnA].Fa;
+
+                  uint64_t Dc = (*stats_array_temp)[rel].stats[j].Da;
+                  uint64_t Fa1 = (*stats_array_temp)[rel].stats[predicates[i].columnA].Fa;
+                  uint64_t Fa = stats_array[rel]->stats[predicates[i].columnA].Fa;
+                  uint64_t Fc = (*stats_array_temp)[rel].stats[j].Fa;
+               
+                  (*stats_array_temp)[rel].stats[j].Da = ( Dc * (1 - (1 - Fa1 / Fa) ^ ( Fc / Dc ) ));
+                }
+
+
+            }
           
             
 
         }
         else if(predicates[i].relationB == 1) {   // filtro >
 
+
         }
         else if(predicates[i].relationB == 2) {     // filtro <
           
         }
+
+    }
+    else {     // an ginetai join
+        int relA = tables[predicates[i].relationA];
+        int relB = tables[predicates[i].relationB];
+        int colA = tables[predicates[i].columnA];
+        int colB = tables[predicates[i].columnB];
+
+        uint64_t Iaa = (*stats_array_temp)[relA].stats[colA].Ia;
+        uint64_t Ibb = (*stats_array_temp)[relB].stats[colB].Ia;
+
+
+        if(Iaa >= Ibb) {
+          (*stats_array_temp)[relA].stats[colA].Ia = Iaa;
+          (*stats_array_temp)[relB].stats[colB].Ia = Iaa;
+        }
+        else {
+          (*stats_array_temp)[relA].stats[colA].Ia = Ibb;
+          (*stats_array_temp)[relB].stats[colB].Ia = Ibb;
+        }
+
+
+        uint64_t Uaa = (*stats_array_temp)[relA].stats[colA].Ua;
+        uint64_t Ubb = (*stats_array_temp)[relB].stats[colB].Ua;
+
+
+
+      if(Uaa <= Ubb) {
+          (*stats_array_temp)[relA].stats[colA].Ua = Uaa;
+          (*stats_array_temp)[relB].stats[colB].Ua = Uaa;  
+      }
+      else {
+          (*stats_array_temp)[relA].stats[colA].Ua = Ubb;
+          (*stats_array_temp)[relB].stats[colB].Ua = Ubb;
+      }
+
+      
+      uint64_t n = (*stats_array_temp)[relA].stats[colA].Ua - (*stats_array_temp)[relA].stats[colA].Ia + 1;
+
+      (*stats_array_temp)[relA].stats[colA].Fa = ((*stats_array_temp)[relA].stats[colA].Fa * (*stats_array_temp)[relB].stats[colB].Fa) / n;
+      (*stats_array_temp)[relB].stats[colB].Fa = (*stats_array_temp)[relA].stats[colA].Fa;
+
+      (*stats_array_temp)[relA].stats[colA].Da = ((*stats_array_temp)[relA].stats[colA].Da * (*stats_array_temp)[relB].stats[colB].Da) / n;
+      (*stats_array_temp)[relB].stats[colB].Da = (*stats_array_temp)[relA].stats[colA].Da;
+
+
+      // gia opoiadhpote allh stili C tou pinaka A
+
+      for(int j = 0; j < (*stats_array_temp)[relA].columns; j++) {
+
+          
+         
+          if(j != predicates[i].columnA) {    // prepei na einai diaforetiki stili apo thn A
+             uint64_t Fa1 = (*stats_array_temp)[relA].stats[predicates[i].columnA].Fa;
+
+            (*stats_array_temp)[relA].stats[j].Fa = Fa1;          // Fc'
+
+            uint64_t Dc = (*stats_array_temp)[relA].stats[j].Da;
+            uint64_t Da1 = (*stats_array_temp)[relA].stats[predicates[i].columnA].Da;  // Da'
+            uint64_t Da = stats_array[relA]->stats[predicates[i].columnA].Da;
+            uint64_t Fc = (*stats_array_temp)[relA].stats[j].Fa;
+
+
+            (*stats_array_temp)[relA].stats[j].Da = ( Dc * (1 - (1 - Da1 / Da) ^ ( Fc / Dc ) ));
+          }
+
+
+      }
+
+
+            // gia opoiadhpote allh stili C tou pinaka B
+
+      for(int j = 0; j < (*stats_array_temp)[relB].columns; j++) {
+
+          
+         
+          if(j != predicates[i].columnB) {    // prepei na einai diaforetiki stili apo thn A
+             uint64_t Fa1 = (*stats_array_temp)[relB].stats[predicates[i].columnB].Fa;
+
+            (*stats_array_temp)[relB].stats[j].Fa = Fa1;          // Fc'
+
+            uint64_t Dc = (*stats_array_temp)[relB].stats[j].Da;
+            uint64_t Da1 = (*stats_array_temp)[relB].stats[predicates[i].columnB].Da;  // Da'
+            uint64_t Da = stats_array[relB]->stats[predicates[i].columnB].Da;
+            uint64_t Fc = (*stats_array_temp)[relB].stats[j].Fa;
+
+
+            (*stats_array_temp)[relB].stats[j].Da = ( Dc * (1 - (1 - Da1 / Da) ^ ( Fc / Dc ) ));
+          }
+
+
+      }
+
+
 
     }
 
