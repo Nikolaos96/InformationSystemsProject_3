@@ -4,7 +4,7 @@
 #include "stats.h"
 #define DONE "Done"
 
- 
+
 
 int main(int argc, char *argv[]){
   char *workload_file, *directory,*query_file, done[20];
@@ -38,8 +38,8 @@ int main(int argc, char *argv[]){
       rep++;
   }while(strcmp(DONE, done));
 
-  read_queries(query_file,&array,relation_number, stats_array);
+  read_queries(query_file,&array,relation_number, &stats_array);
 
-  delete_all_array(&array, relation_number, &directory, &workload_file,&query_file);
+  delete_all_array(&array, relation_number, &directory, &workload_file,&query_file,&stats_array);
   return 0;
 }

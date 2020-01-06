@@ -2,7 +2,7 @@
 #include "function.h"
 #include "sort_join.h"
 #include "join_list.h"
-#include "mid_list.h" 
+#include "mid_list.h"
 #include "HashTable.h"
 #define  BYTEPOS  7
 #define HASH_TABLE_SIZE 10000
@@ -1225,9 +1225,11 @@ void take_checksums(checksum_struct *checksums,int number_of_checksums,char* que
 
 
 
-void orderOfPredicates(q* predicates, int number_of_predicates, statistics_array ** stats_array, int* tables, int relation_number) {
+void orderOfPredicates(q* predicates, int number_of_predicates, statistics_array **stats_array, int* tables, int relation_number) {
 
-  statistics_array** stats_array_temp;
+
+
+  statistics_array* stats_array_temp;
 
   int relationNum = 0;
   for(int i = 0; i < relation_number; i++) {
@@ -1236,99 +1238,101 @@ void orderOfPredicates(q* predicates, int number_of_predicates, statistics_array
       }
   }
 
-  *stats_array_temp=malloc(relationNum * sizeof(statistics_array));
-
+  stats_array_temp=malloc(relationNum * sizeof(statistics_array));
 
   for(int i = 0; i < relationNum; i++) {
-    (*stats_array_temp)[i].stats = malloc(stats_array[i]->columns * sizeof(statistics));
+    stats_array_temp[i].stats = malloc((*stats_array)[tables[i]].columns * sizeof(statistics));
+    stats_array_temp[i].columns=(*stats_array)[tables[i]].columns;
+    stats_array_temp[i].tuples=(*stats_array)[tables[i]].tuples;
 
-    for(int j = 0; j < stats_array[i]->columns; j++) {
-      (*stats_array_temp)[i].stats[j].Ia = stats_array[i]->stats[j].Ia;
-      (*stats_array_temp)[i].stats[j].Ua = stats_array[i]->stats[j].Ua;
-      (*stats_array_temp)[i].stats[j].Fa = stats_array[i]->stats[j].Fa;
-      (*stats_array_temp)[i].stats[j].Da = stats_array[i]->stats[j].Da;
-      (*stats_array_temp)[i].stats[j].max_case = stats_array[i]->stats[j].max_case;
+    for(int j = 0; j < (*stats_array)[tables[i]].columns; j++) {
+      stats_array_temp[i].stats[j].Ia = (*stats_array)[tables[i]].stats[j].Ia;
+      stats_array_temp[i].stats[j].Ua = (*stats_array)[tables[i]].stats[j].Ua;
+      stats_array_temp[i].stats[j].Fa = (*stats_array)[tables[i]].stats[j].Fa;
+      stats_array_temp[i].stats[j].Da = (*stats_array)[tables[i]].stats[j].Da;
+      stats_array_temp[i].stats[j].max_case = (*stats_array)[tables[i]].stats[j].max_case;
 
 
       int Da_array_size;
 
-      if((*stats_array_temp)[i].stats[j].max_case == 1) {
-        Da_array_size = (*stats_array_temp)[i].stats[j].Ua - (*stats_array_temp)[i].stats[j].Ia + 1;
+      if(stats_array_temp[i].stats[j].max_case == 0) {
+        Da_array_size = stats_array_temp[i].stats[j].Ua - stats_array_temp[i].stats[j].Ia + 1;
       }
-      else {
+      else{
         Da_array_size = MAX_N;
       }
 
-
-      (*stats_array_temp)[i].stats[j].Da_array = malloc(Da_array_size * sizeof(bool));
+      stats_array_temp[i].stats[j].Da_array = malloc(Da_array_size * sizeof(bool));
 
       for(int k = 0; k < Da_array_size; k++) {
-          (*stats_array_temp)[i].stats[j].Da_array[k] = stats_array[i]->stats[j].Da_array[k];
+          stats_array_temp[i].stats[j].Da_array[k] = (*stats_array)[tables[i]].stats[j].Da_array[k];
       }
-
-      
     }
 
-
   }
-
-
-
+    for(int i=0;i< relationNum;i++){
+      for(int j=0;j<stats_array_temp[i].columns;j++){
+        printf("Ia==%lu  ",stats_array_temp[i].stats[j].Ia);
+        printf("Ua==%lu  ",stats_array_temp[i].stats[j].Ua);
+        printf("Fa==%lu  ",stats_array_temp[i].stats[j].Fa);
+        printf("Da==%lu  ",stats_array_temp[i].stats[j].Da);
+      }
+      printf("\n\n");
+    }
 
   for(int i = number_of_predicates - 1; i >= 0; i--) {
-
+    printf("i===%d\n",i);
     if(predicates[i].join == false) {     // it is a filter
 
         if(predicates[i].relationB == 0) {   // filtro =
-            
+
 
             // gia thn stili A
-            int rel = tables[predicates[i].relationA];
+            int rel = predicates[i].relationA;
             int filter = predicates[i].columnB;
 
 
-            (*stats_array_temp)[rel].stats[predicates[i].columnA].Ia = filter;
-            (*stats_array_temp)[rel].stats[predicates[i].columnA].Ua = filter;
-            
+            stats_array_temp[rel].stats[predicates[i].columnA].Ia = filter;
+            stats_array_temp[rel].stats[predicates[i].columnA].Ua = filter;
 
-            int pos = predicates[i].columnB - (*stats_array_temp)[rel].stats[predicates[i].columnA].Ia;
 
-            if((*stats_array_temp)[rel].stats[predicates[i].columnA].max_case == 1) {
+            int pos = predicates[i].columnB - stats_array_temp[rel].stats[predicates[i].columnA].Ia;
+
+            if(stats_array_temp[rel].stats[predicates[i].columnA].max_case == 1) {
                 pos = pos % MAX_N;
             }
 
-            uint64_t Da = (*stats_array_temp)[rel].stats[predicates[i].columnA].Da;
+            uint64_t Da = stats_array_temp[rel].stats[predicates[i].columnA].Da;
 
-            if((*stats_array_temp)[rel].stats[predicates[i].columnA].Da_array[pos] == true) {
-              (*stats_array_temp)[rel].stats[predicates[i].columnA].Da = 1;
-              (*stats_array_temp)[rel].stats[predicates[i].columnA].Fa /= Da;
+            if(stats_array_temp[rel].stats[predicates[i].columnA].Da_array[pos] == true) {
+              stats_array_temp[rel].stats[predicates[i].columnA].Da = 1;
+              stats_array_temp[rel].stats[predicates[i].columnA].Fa /= Da;
             }
             else {
-              (*stats_array_temp)[rel].stats[predicates[i].columnA].Da = 0;
-              (*stats_array_temp)[rel].stats[predicates[i].columnA].Fa = 0;
+              stats_array_temp[rel].stats[predicates[i].columnA].Da = 0;
+              stats_array_temp[rel].stats[predicates[i].columnA].Fa = 0;
             }
 
             // gia opoiadhpote allh stili C
 
-            for(int j = 0; j < (*stats_array_temp)[rel].columns; j++) {
+            for(int j = 0; j < stats_array_temp[rel].columns; j++) {
 
-                
-                uint64_t Fa1 = (*stats_array_temp)[rel].stats[predicates[i].columnA].Fa;
+
+                uint64_t Fa1 = stats_array_temp[rel].stats[predicates[i].columnA].Fa;
                 if(j != predicates[i].columnA) {    // prepei na einai diaforetiki stili apo thn A
-                  (*stats_array_temp)[rel].stats[j].Fa = (*stats_array_temp)[rel].stats[predicates[i].columnA].Fa;
+                  stats_array_temp[rel].stats[j].Fa = stats_array_temp[rel].stats[predicates[i].columnA].Fa;
 
-                  uint64_t Dc = (*stats_array_temp)[rel].stats[j].Da;
-                  uint64_t Fa1 = (*stats_array_temp)[rel].stats[predicates[i].columnA].Fa;
-                  uint64_t Fa = stats_array[rel]->stats[predicates[i].columnA].Fa;
-                  uint64_t Fc = (*stats_array_temp)[rel].stats[j].Fa;
-               
-                  (*stats_array_temp)[rel].stats[j].Da = ( Dc * (1 - (1 - Fa1 / Fa) ^ ( Fc / Dc ) ));
+                  uint64_t Dc = stats_array_temp[rel].stats[j].Da;
+                  uint64_t Fa1 = stats_array_temp[rel].stats[predicates[i].columnA].Fa;
+                  uint64_t Fa = (*stats_array)[rel].stats[predicates[i].columnA].Fa;
+                  uint64_t Fc = stats_array_temp[rel].stats[j].Fa;
+
+                  stats_array_temp[rel].stats[j].Da = ( Dc * (1 - (1 - Fa1 / Fa) ^ ( Fc / Dc ) ));
                 }
 
 
             }
-          
-            
+
 
         }
         else if(predicates[i].relationB == 1) {   // filtro >
@@ -1336,102 +1340,102 @@ void orderOfPredicates(q* predicates, int number_of_predicates, statistics_array
 
         }
         else if(predicates[i].relationB == 2) {     // filtro <
-          
+
         }
 
     }
     else {     // an ginetai join
-        int relA = tables[predicates[i].relationA];
-        int relB = tables[predicates[i].relationB];
-        int colA = tables[predicates[i].columnA];
-        int colB = tables[predicates[i].columnB];
+        int relA = predicates[i].relationA;
+        int relB = predicates[i].relationB;
+        int colA = predicates[i].columnA;
+        int colB = predicates[i].columnB;
 
-        uint64_t Iaa = (*stats_array_temp)[relA].stats[colA].Ia;
-        uint64_t Ibb = (*stats_array_temp)[relB].stats[colB].Ia;
-
+        uint64_t Iaa = stats_array_temp[relA].stats[colA].Ia;
+        uint64_t Ibb = stats_array_temp[relB].stats[colB].Ia;
 
         if(Iaa >= Ibb) {
-          (*stats_array_temp)[relA].stats[colA].Ia = Iaa;
-          (*stats_array_temp)[relB].stats[colB].Ia = Iaa;
+          stats_array_temp[relA].stats[colA].Ia = Iaa;
+          stats_array_temp[relB].stats[colB].Ia = Iaa;
         }
         else {
-          (*stats_array_temp)[relA].stats[colA].Ia = Ibb;
-          (*stats_array_temp)[relB].stats[colB].Ia = Ibb;
+          stats_array_temp[relA].stats[colA].Ia = Ibb;
+          stats_array_temp[relB].stats[colB].Ia = Ibb;
         }
 
 
-        uint64_t Uaa = (*stats_array_temp)[relA].stats[colA].Ua;
-        uint64_t Ubb = (*stats_array_temp)[relB].stats[colB].Ua;
+        uint64_t Uaa = stats_array_temp[relA].stats[colA].Ua;
+        uint64_t Ubb = stats_array_temp[relB].stats[colB].Ua;
 
 
 
       if(Uaa <= Ubb) {
-          (*stats_array_temp)[relA].stats[colA].Ua = Uaa;
-          (*stats_array_temp)[relB].stats[colB].Ua = Uaa;  
+          stats_array_temp[relA].stats[colA].Ua = Uaa;
+          stats_array_temp[relB].stats[colB].Ua = Uaa;
       }
       else {
-          (*stats_array_temp)[relA].stats[colA].Ua = Ubb;
-          (*stats_array_temp)[relB].stats[colB].Ua = Ubb;
+          stats_array_temp[relA].stats[colA].Ua = Ubb;
+          stats_array_temp[relB].stats[colB].Ua = Ubb;
       }
 
-      
-      uint64_t n = (*stats_array_temp)[relA].stats[colA].Ua - (*stats_array_temp)[relA].stats[colA].Ia + 1;
 
-      (*stats_array_temp)[relA].stats[colA].Fa = ((*stats_array_temp)[relA].stats[colA].Fa * (*stats_array_temp)[relB].stats[colB].Fa) / n;
-      (*stats_array_temp)[relB].stats[colB].Fa = (*stats_array_temp)[relA].stats[colA].Fa;
+      uint64_t n = stats_array_temp[relA].stats[colA].Ua - stats_array_temp[relA].stats[colA].Ia + 1;
 
-      (*stats_array_temp)[relA].stats[colA].Da = ((*stats_array_temp)[relA].stats[colA].Da * (*stats_array_temp)[relB].stats[colB].Da) / n;
-      (*stats_array_temp)[relB].stats[colB].Da = (*stats_array_temp)[relA].stats[colA].Da;
+      stats_array_temp[relA].stats[colA].Fa = (stats_array_temp[relA].stats[colA].Fa * stats_array_temp[relB].stats[colB].Fa) / n;
+      stats_array_temp[relB].stats[colB].Fa = stats_array_temp[relA].stats[colA].Fa;
 
+      stats_array_temp[relA].stats[colA].Da = (stats_array_temp[relA].stats[colA].Da * stats_array_temp[relB].stats[colB].Da) / n;
+      stats_array_temp[relB].stats[colB].Da = stats_array_temp[relA].stats[colA].Da;
 
       // gia opoiadhpote allh stili C tou pinaka A
 
-      for(int j = 0; j < (*stats_array_temp)[relA].columns; j++) {
+      for(int j = 0; j < stats_array_temp[relA].columns; j++) {
 
-          
-         
+        //printf("j1==%d,relA=%d,columnA=%d\n",j,relA,predicates[i].columnA);
+
+
           if(j != predicates[i].columnA) {    // prepei na einai diaforetiki stili apo thn A
-             uint64_t Fa1 = (*stats_array_temp)[relA].stats[predicates[i].columnA].Fa;
+             uint64_t Fa1 = stats_array_temp[relA].stats[colA].Fa;
 
-            (*stats_array_temp)[relA].stats[j].Fa = Fa1;          // Fc'
+            stats_array_temp[relA].stats[j].Fa = Fa1;          // Fc'
 
-            uint64_t Dc = (*stats_array_temp)[relA].stats[j].Da;
-            uint64_t Da1 = (*stats_array_temp)[relA].stats[predicates[i].columnA].Da;  // Da'
-            uint64_t Da = stats_array[relA]->stats[predicates[i].columnA].Da;
-            uint64_t Fc = (*stats_array_temp)[relA].stats[j].Fa;
+            uint64_t Dc = stats_array_temp[relA].stats[j].Da;
+            //printf("dc==%lu\n",Dc);
+            uint64_t Da1 = stats_array_temp[relA].stats[colA].Da;  // Da'
+            uint64_t Da = (*stats_array)[tables[relA]].stats[predicates[i].columnA].Da;
+          //  printf("da==%lu\n",Da);
 
+            uint64_t Fc = (*stats_array)[tables[relA]].stats[j].Fa;
 
-            (*stats_array_temp)[relA].stats[j].Da = ( Dc * (1 - (1 - Da1 / Da) ^ ( Fc / Dc ) ));
+          //  printf("1111\n");
+            stats_array_temp[relA].stats[j].Da =  Dc * (1 - (1 - Da1 / Da) ^ ( Fc / Dc ) );
+
           }
 
 
       }
-
-
             // gia opoiadhpote allh stili C tou pinaka B
+      for(int j = 0; j < stats_array_temp[relB].columns; j++) {
+        //printf("j2==%d,relB=%d,columnB=%lu\n",j,relB,predicates[i].columnB);
 
-      for(int j = 0; j < (*stats_array_temp)[relB].columns; j++) {
-
-          
-         
           if(j != predicates[i].columnB) {    // prepei na einai diaforetiki stili apo thn A
-             uint64_t Fa1 = (*stats_array_temp)[relB].stats[predicates[i].columnB].Fa;
+             uint64_t Fa1 = stats_array_temp[relB].stats[predicates[i].columnB].Fa;
 
-            (*stats_array_temp)[relB].stats[j].Fa = Fa1;          // Fc'
+            stats_array_temp[relB].stats[j].Fa = Fa1;          // Fc'
 
-            uint64_t Dc = (*stats_array_temp)[relB].stats[j].Da;
-            uint64_t Da1 = (*stats_array_temp)[relB].stats[predicates[i].columnB].Da;  // Da'
-            uint64_t Da = stats_array[relB]->stats[predicates[i].columnB].Da;
-            uint64_t Fc = (*stats_array_temp)[relB].stats[j].Fa;
+            uint64_t Dc = stats_array_temp[relB].stats[j].Da;
 
+            uint64_t Da1 = stats_array_temp[relB].stats[predicates[i].columnB].Da;  // Da'
 
-            (*stats_array_temp)[relB].stats[j].Da = ( Dc * (1 - (1 - Da1 / Da) ^ ( Fc / Dc ) ));
+            uint64_t Da = (*stats_array)[tables[relB]].stats[predicates[i].columnB].Da;
+
+            uint64_t Fc = (*stats_array)[tables[relB]].stats[j].Fa;
+          //  printf("--------Dc=%lu,Da=%lu,Da1=%lu,Fc=%lu\n",Dc,Da,Da1,Fc);
+            stats_array_temp[relB].stats[j].Da =  Dc * (1 - (1 - Da1 / Da) ^ ( Fc / Dc ) );
+
           }
 
 
       }
-
-
 
     }
 
@@ -1439,6 +1443,13 @@ void orderOfPredicates(q* predicates, int number_of_predicates, statistics_array
   }
 
 
+for(int i=0;i< relationNum;i++){
+  for(int j=0;j< stats_array_temp[i].columns;j++){
+    free(stats_array_temp[i].stats[j].Da_array);
+  }
+  free(stats_array_temp[i].stats);
+}
+free(stats_array_temp);
 }
 
  void read_queries(char *query_file,main_array **array,int relation_number, statistics_array **stats_array){
@@ -1486,7 +1497,7 @@ void orderOfPredicates(q* predicates, int number_of_predicates, statistics_array
         strcpy(query2, query);
 
 
-        orderOfPredicates(predicates, number_of_predicates, stats_array, tables, relation_number );
+        orderOfPredicates(predicates, number_of_predicates,stats_array, tables, relation_number );
 
         //checksum
         int number_of_checksums=find_checksum_number(query2);
@@ -1519,7 +1530,7 @@ void orderOfPredicates(q* predicates, int number_of_predicates, statistics_array
 
 
 
- void delete_all_array(main_array **array, int relation_number, char **directory, char **file,char **query_file){
+ void delete_all_array(main_array **array, int relation_number, char **directory, char **file,char **query_file,statistics_array **stats_array){
 
    for(int i = 0 ; i < relation_number; i++){
        free( (*array)[i].index );
@@ -1527,6 +1538,13 @@ void orderOfPredicates(q* predicates, int number_of_predicates, statistics_array
    }
    free( *array );
 
+   for(int i=0;i< relation_number;i++){
+     for(int j=0;j< (*stats_array)[i].columns;j++){
+       free((*stats_array)[i].stats[j].Da_array);
+     }
+     free((*stats_array)[i].stats);
+   }
+   free(*stats_array);
 
    free(*directory);
    free(*file);
