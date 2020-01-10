@@ -83,26 +83,28 @@
      }
 
 
-
-
-     //printf("ssssssssssssssss \n");
      if(find == 1){ // tote vrethike to rowId ara prepei na valoume ta alla rowId stin lista
-
+/*
 	rows_node *t = bucket->Dedomena[i].row;
         while(t->next_row != NULL) t = t->next_row;
-
         rows_node *t2 = malloc(sizeof(rows_list));
         t->next_row = t2;
-
-	t2->row_id = rowId2;
+  	t2->row_id = rowId2;
 	if(periptosi == 2) t2->row_id2 = rowId3;
-
 	t2->next_row = NULL;
+*/
 
-  //      printf("Egine eisagwgi rowId se idi yparxon rowId \n");
+	 rows_node *t = bucket->Dedomena[i].row;
+
+         rows_node *t2 = malloc(sizeof(rows_list));
+	 t2->row_id = rowId2;
+	 if(periptosi == 2) t2->row_id2 = rowId3;
+	 t2->next_row = t->next_row;
+
+	 t->next_row = t2;
 
      }else{ // den vrethike, prepei na to valoume sto hash table an exei xwro
-   (*linfo)->unique_ids++;
+        (*linfo)->unique_ids++;
 	 bucket = (*linfo)->arxi;
 	 while(bucket->epomenos != NULL) bucket = bucket->epomenos;
 
@@ -138,7 +140,6 @@
 
 	     new_bucket->Dedomena[0].row->next_row = NULL;
 	     new_bucket->adeia_thesi++;
-
 
 //	     printf("Eisagwgi se neo bucket  %d \n", new_bucket->adeia_thesi);
 	 }
@@ -184,7 +185,6 @@
 	 free(bucket2);
      }
      free((*linfo));
-//     printf("Diagrafi hashTable \n");
  }
 
 
@@ -201,15 +201,16 @@
          bucket = bucket->epomenos;
      }
  }
+
+
+
 int take_unique_ids(deiktis_ht* linfo){
   return (*linfo)->unique_ids;
 }
 
- uint64_t hash(uint64_t x, int p) {
-//    x = (x ^ (x >> 30)) * UINT64_C(0xbf58476d1ce4e5b9);
-//    x = (x ^ (x >> 27)) * UINT64_C(0x94d049bb133111eb);
-//    x = x ^ (x >> 31);
 
+
+ uint64_t hash(uint64_t x, int p) {
     uint64_t a = x % p;
 
     return a;

@@ -4,6 +4,7 @@
 #include "join_list.h"
 #include "mid_list.h"
 #include "HashTable.h"
+#include "hash_t.h"
 #define  BYTEPOS  7
 #define HASH_TABLE_SIZE 10000
 #define MAX_N 40000000
@@ -1270,6 +1271,7 @@ void orderOfPredicates(q* predicates, int number_of_predicates, statistics_array
     }
 
   }
+/*
     for(int i=0;i< relationNum;i++){
       for(int j=0;j<stats_array_temp[i].columns;j++){
         printf("Ia==%lu  ",stats_array_temp[i].stats[j].Ia);
@@ -1279,9 +1281,10 @@ void orderOfPredicates(q* predicates, int number_of_predicates, statistics_array
       }
       printf("\n\n");
     }
+*/
 
   for(int i = number_of_predicates - 1; i >= 0; i--) {
-    printf("i===%d\n",i);
+//    printf("i===%d\n",i);
     if(predicates[i].join == false) {     // it is a filter
 
         if(predicates[i].relationB == 0) {   // filtro =
@@ -1334,13 +1337,56 @@ void orderOfPredicates(q* predicates, int number_of_predicates, statistics_array
             }
 
 
-        }
-        else if(predicates[i].relationB == 1) {   // filtro >
+        }else if(predicates[i].relationB == 1) {   // filtro >
+	    int rel = predicates[i].relationA;
+	    uint64_t Ua = stats_array_temp[rel].stats[predicates[i].columnA].Ua;
+	    uint64_t Ia = stats_array_temp[rel].stats[predicates[i].columnA].Ia;
+	    uint64_t Da = stats_array_temp[rel].stats[predicates[i].columnA].Da;
+	    uint64_t Fa = stats_array_temp[rel].stats[predicates[i].columnA].Fa;
+	    uint64_t k1 = predicates[i].columnB;
+	    uint64_t k2 = stats_array_temp[rel].stats[predicates[i].columnA].Ua;
 
+	    stats_array_temp[rel].stats[predicates[i].columnA].Ia = k1;
+	    stats_array_temp[rel].stats[predicates[i].columnA].Da = ((k2-k1) / (Ua - Ia)) * Da;
+  	    stats_array_temp[rel].stats[predicates[i].columnA].Fa = ((k2-k1) / (Ua - Ia)) * Fa;
 
-        }
-        else if(predicates[i].relationB == 2) {     // filtro <
+	    for(int j = 0; j < stats_array_temp[rel].columns; j++){
 
+	        if(j != predicates[i].columnA) {
+		    uint64_t Dc = stats_array_temp[rel].stats[j].Da;
+                    uint64_t Fa1 = stats_array_temp[rel].stats[predicates[i].columnA].Fa;
+                    uint64_t Fa = (*stats_array)[rel].stats[predicates[i].columnA].Fa;
+                    uint64_t Fc = stats_array_temp[rel].stats[j].Fa;
+
+                    stats_array_temp[rel].stats[j].Da = ( Dc * (1 - (1 - Fa1 / Fa) ^ ( Fc / Dc ) ));
+		    stats_array_temp[rel].stats[j].Fa = Fa1;
+		}
+	    }
+        }else if(predicates[i].relationB == 2) {     // filtro <
+	    int rel = predicates[i].relationA;
+            uint64_t Ua = stats_array_temp[rel].stats[predicates[i].columnA].Ua;
+            uint64_t Ia = stats_array_temp[rel].stats[predicates[i].columnA].Ia;
+            uint64_t Da = stats_array_temp[rel].stats[predicates[i].columnA].Da;
+            uint64_t Fa = stats_array_temp[rel].stats[predicates[i].columnA].Fa;
+            uint64_t k1 = stats_array_temp[rel].stats[predicates[i].columnA].Ia;
+            uint64_t k2 = predicates[i].columnB;
+
+            stats_array_temp[rel].stats[predicates[i].columnA].Ua = k2;
+            stats_array_temp[rel].stats[predicates[i].columnA].Da = ((k2-k1) / (Ua - Ia)) * Da;
+            stats_array_temp[rel].stats[predicates[i].columnA].Fa = ((k2-k1) / (Ua - Ia)) * Fa;
+
+            for(int j = 0; j < stats_array_temp[rel].columns; j++){
+
+                if(j != predicates[i].columnA) {
+                    uint64_t Dc = stats_array_temp[rel].stats[j].Da;
+                    uint64_t Fa1 = stats_array_temp[rel].stats[predicates[i].columnA].Fa;
+                    uint64_t Fa = (*stats_array)[rel].stats[predicates[i].columnA].Fa;
+                    uint64_t Fc = stats_array_temp[rel].stats[j].Fa;
+
+                    stats_array_temp[rel].stats[j].Da = ( Dc * (1 - (1 - Fa1 / Fa) ^ ( Fc / Dc ) ));
+                    stats_array_temp[rel].stats[j].Fa = Fa1;
+                }
+            }
         }
 
     }
@@ -1386,6 +1432,9 @@ void orderOfPredicates(q* predicates, int number_of_predicates, statistics_array
       stats_array_temp[relA].stats[colA].Da = (stats_array_temp[relA].stats[colA].Da * stats_array_temp[relB].stats[colB].Da) / n;
       stats_array_temp[relB].stats[colB].Da = stats_array_temp[relA].stats[colA].Da;
 
+
+
+
       // gia opoiadhpote allh stili C tou pinaka A
 
       for(int j = 0; j < stats_array_temp[relA].columns; j++) {
@@ -1400,14 +1449,15 @@ void orderOfPredicates(q* predicates, int number_of_predicates, statistics_array
 
             uint64_t Dc = stats_array_temp[relA].stats[j].Da;
             //printf("dc==%lu\n",Dc);
-            uint64_t Da1 = stats_array_temp[relA].stats[colA].Da;  // Da'
-            uint64_t Da = (*stats_array)[tables[relA]].stats[predicates[i].columnA].Da;
+            Fa1 = stats_array_temp[relA].stats[colA].Fa;  // Fa'
+            uint64_t Fa = (*stats_array)[tables[relA]].stats[predicates[i].columnA].Fa;
           //  printf("da==%lu\n",Da);
 
             uint64_t Fc = (*stats_array)[tables[relA]].stats[j].Fa;
 
           //  printf("1111\n");
-            stats_array_temp[relA].stats[j].Da =  Dc * (1 - (1 - Da1 / Da) ^ ( Fc / Dc ) );
+	    if(Dc == 0) Dc = 1;
+            stats_array_temp[relA].stats[j].Da =  Dc * (1 - (1 - Fa1 / Fa) ^ ( Fc / Dc ) );	/////////////
 
           }
 
@@ -1424,13 +1474,15 @@ void orderOfPredicates(q* predicates, int number_of_predicates, statistics_array
 
             uint64_t Dc = stats_array_temp[relB].stats[j].Da;
 
-            uint64_t Da1 = stats_array_temp[relB].stats[predicates[i].columnB].Da;  // Da'
+            Fa1 = stats_array_temp[relB].stats[predicates[i].columnB].Fa;  // Fa'
 
-            uint64_t Da = (*stats_array)[tables[relB]].stats[predicates[i].columnB].Da;
+            uint64_t Fa = (*stats_array)[tables[relB]].stats[predicates[i].columnB].Fa;
 
             uint64_t Fc = (*stats_array)[tables[relB]].stats[j].Fa;
+
           //  printf("--------Dc=%lu,Da=%lu,Da1=%lu,Fc=%lu\n",Dc,Da,Da1,Fc);
-            stats_array_temp[relB].stats[j].Da =  Dc * (1 - (1 - Da1 / Da) ^ ( Fc / Dc ) );
+            if(Dc == 0) Dc = 1;
+            stats_array_temp[relB].stats[j].Da =  Dc * (1 - (1 - Fa1 / Fa) ^ ( Fc / Dc ) );	/////   Dc
 
           }
 
@@ -1443,16 +1495,63 @@ void orderOfPredicates(q* predicates, int number_of_predicates, statistics_array
   }
 
 
-for(int i=0;i< relationNum;i++){
-  for(int j=0;j< stats_array_temp[i].columns;j++){
-    free(stats_array_temp[i].stats[j].Da_array);
+
+
+  hash_st *hash_table;
+  dimiourgia(hash_table, relationNum);
+  for(int i = 0 ; i < relationNum ; i++) eisagwgi_hash_table(hash_table, i, i);
+
+
+
+
+  for(int i = 1 ; i < relationNum ; i++){
+      for(int s = 0 ; s < relationNum ; s++){
+          for(int j = 0 ; j < relationNum ; j++){
+//              if( is_in_hast_t(hash_table, s, j) ){
+//	          if(){
+			// einai connexted ???
+//		  }
+
+		  hash_node t;
+//		  t.order = malloc( (i+1) * sizeof(int));
+//		  t.cost = hash_table->hash_point[s].cost;
+//		  t.index = hash_table->hash_point[s].index;
+  //                for(int q = 0 ; q < t.index ; q++) t.order[i] = hash_table->hash_point[s].order[i];
+
+//		  t.order[i+1] = j;
+//		  t.cost += stats_array_temp[j].stats[0].Fa;
+//	      }
+	  }
+      }
   }
-  free(stats_array_temp[i].stats);
-}
-free(stats_array_temp);
+
+
+
+
+
+
+
+  for(int i=0;i< relationNum;i++){
+      for(int j=0;j< stats_array_temp[i].columns;j++){
+          free(stats_array_temp[i].stats[j].Da_array);
+      }
+      free(stats_array_temp[i].stats);
+   }
+   free(stats_array_temp);
 }
 
+
+
+
+
+
+
+
+
+
+
  void read_queries(char *query_file,main_array **array,int relation_number, statistics_array **stats_array){
+
    char *query, query2[100];
    size_t len = 0;
    clock_t time;

@@ -1,5 +1,5 @@
-main: main.o function.o sort_join.o join_list.o mid_list.o HashTable.o
-	gcc -O2 main.o function.o sort_join.o join_list.o mid_list.o HashTable.o -o main
+main: main.o function.o sort_join.o join_list.o mid_list.o HashTable.o hash_t.o
+	gcc -O2 main.o function.o sort_join.o join_list.o mid_list.o HashTable.o hash_t.o -o main
 
 main.o: main.c
 	gcc -O2 -c main.c
@@ -19,6 +19,8 @@ mid_list.o: mid_list.c
 HashTable.o: HashTable.c
 	gcc -O2 -c HashTable.c
 
+hash_t.o: hash_t.c
+	gcc -O2 -c hash_t.c
 clean:
 	rm -f main main.o function.o sort_join.o join_list.o mid_list.o HashTable.o
 
