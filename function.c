@@ -1048,6 +1048,18 @@ void take_checksums(checksum_struct *checksums,int number_of_checksums,char* que
 
 
  void lets_go_for_predicates(main_array **array, int *tables, int relation_number, q *predicates, int number_of_predicates,checksum_struct *checksums,int number_of_checksums){
+     
+     ////////////////////////////////////// printing 
+      printf("\n");
+    /*
+     printf("LETS GO, num of preds is %d\n", number_of_predicates);
+     printf("queue head is %d\n", queue_head);
+     printf("queue tail is %d\n", queue_tail); 
+     */
+
+    ////////////////////////////////
+
+
      int i, ii = 0,sort_needed=0,flag=0;
      relation *Rr1, *Rr2;
      relation *Ss1, *Ss2;
@@ -1680,16 +1692,44 @@ void orderOfPredicates(q* predicates, int number_of_predicates, statistics_array
 
  void* threadFunction(void* args) {
 
-    int* num;
-    if((int)args == 1) {
-      num = malloc(3*sizeof(int));
-      num[0] = 0;
-      num[1] = 1;
-      num[2] = 2;
+    while(1) {
+       
+/*
+      printf("queue head is %d\n", queue_head);
+      printf("queue tail is %d\n", queue_tail);*/
+      
+      sem_wait(&semQueue);
+      if(!queue_empty()) {
+
+        //sem_wait(&semQueue);
+
+        //printf("LETS GOOOO\n");
+        
+        //printf("queue head is %d\n", queue_head);
+        //printf("queue tail is %d\n", queue_tail);
+
+
+        int number_of_predicates = queue[queue_head].number_of_predicates;
+        int relation_number = queue[queue_head].relation_number;
+        int number_of_checksums = queue[queue_head].number_of_checksums;
+
+        lets_go_for_predicates((main_array **)args, &queue[queue_head].tables[0], relation_number, queue[queue_head].predicates, number_of_predicates, queue[queue_head].checksums , number_of_checksums);
+        
+        delete_queue();
+
+
+        //sem_post(&semQueue);
+ 
+        
+      }
+      else {
+        sem_post(&semQueue);
+        break;
+      }
+
+      sem_post(&semQueue);
+
     }
-
-    printf("I am %d and num[0] is %d\n", (int)args, num[0]);
-    
-
+    printf("deleting thread....\n");
     pthread_exit(NULL);
  }

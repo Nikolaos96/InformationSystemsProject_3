@@ -43,9 +43,10 @@ int main(int argc, char *argv[]){
 
 
 ////////////////////////
-  sem_init(&semQueue, 1, 1);
-  create_queue(80);
+  sem_init(&semQueue, 0, 1);
+  create_queue(100);
 
+  read_queries(query_file,&array,relation_number, &stats_array);
 
 
   pthread_t *tids;
@@ -54,13 +55,16 @@ int main(int argc, char *argv[]){
       exit(1);
   }
   int err;
+
+  clock_t time1, time2, total_t;
+  time1 = clock();
+
   for(int i = 0; i < NUM_OF_THREADS; i++) {
-    if(err = pthread_create(tids+i, NULL, threadFunction, (void*)i)) {
+    if(err = pthread_create(tids+i, NULL, threadFunction, (void*)&array)) {
       printf("Error in pthread_create\n");
       exit(1);
     }
   }
-
 
 
 for(int i = 0; i < NUM_OF_THREADS; i++){
@@ -70,20 +74,26 @@ for(int i = 0; i < NUM_OF_THREADS; i++){
   }
 }
 
+time2 = clock();
 
-read_queries(query_file,&array,relation_number, &stats_array);
 
-for(int i = 0; i < 10; i++) {
-  printf("queuequeryNum is %d\n", queue[i].queryNum);
-  printf("relationA is %d, column A is %d\n", queue[i].predicates[0].relationA, queue[i].predicates[0].columnA);
-}
+total_t = (double)(time2 - time1);
+printf("Total time taken by CPU: %f\n", total_t );
+
+printf("naiiiiiiiiii\n");
+
+
+for(int i = queue_head; i < queue_tail; i++) {
+  //printf("queuequeryNum is %d\n", queue[queue_tail - 1].queryNum);
+  //printf("relationA is %d, column A is %d\n", queue[queue_tail - 1].predicates[0].relationA, queue[queue_tail - 1].number_of_predicates);
+   free(queue[i].checksums);
+   free(queue[i].predicates);
+   free(queue[i].tables);
+} 
+
+delete_queue();
 
 /////////////////////////////
-
-  
-
-
-
 
   delete_all_array(&array, relation_number, &directory, &workload_file,&query_file,&stats_array);
   return 0;
