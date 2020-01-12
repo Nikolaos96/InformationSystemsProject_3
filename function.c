@@ -5,11 +5,14 @@
 #include "mid_list.h"
 #include "HashTable.h"
 #include "hash_t.h"
+#include "queue.h"
+
 #define  BYTEPOS  7
 #define HASH_TABLE_SIZE 10000
 #define MAX_N 40000000
 
 
+  
  /*
    take arguments from command line and init variables
  */
@@ -1497,9 +1500,9 @@ void orderOfPredicates(q* predicates, int number_of_predicates, statistics_array
 
 
 
-  hash_st *hash_table;
-  dimiourgia(hash_table, relationNum);
-  for(int i = 0 ; i < relationNum ; i++) eisagwgi_hash_table(hash_table, i, i);
+  //hash_st *hash_table;
+  //dimiourgia(hash_table, relationNum);
+  //for(int i = 0 ; i < relationNum ; i++) eisagwgi_hash_table(hash_table, i, i);
 
 
 
@@ -1603,15 +1606,36 @@ void orderOfPredicates(q* predicates, int number_of_predicates, statistics_array
         checksum_struct *checksums = malloc(number_of_checksums * sizeof(checksum_struct));
         strcpy(query2, query);
 
-
-
         take_checksums(checksums,number_of_checksums,query2);//edw exoume to struct me ta checksums
-        time = clock();
-        lets_go_for_predicates(array, &tables[0], relation_number, predicates, number_of_predicates,checksums,number_of_checksums);
-        time = clock() - time;
-        printf("                                    (Cpu time:  %lf  sec)\n", ((double)time) / CLOCKS_PER_SEC);
+
+        sem_wait(&semQueue);
+
+        queue[queue_tail].queryNum = xx;
+        queue[queue_tail].number_of_predicates = number_of_predicates;
+        queue[queue_tail].relation_number = relation_number;
+        queue[queue_tail].number_of_checksums = number_of_checksums;
+        queue[queue_tail].tables     = malloc(relation_number * sizeof(int));
+        queue[queue_tail].checksums  = malloc(number_of_checksums * sizeof(checksum_struct));
+        queue[queue_tail].predicates  = malloc(number_of_predicates * sizeof(q));
 
 
+        for(int i = 0; i < relation_number; i++) {
+            queue[queue_tail].tables[i] = tables[i];
+        }
+
+        for(int i = 0; i < number_of_checksums; i++) {
+            queue[queue_tail].checksums[i] = checksums[i];
+        }
+
+        for(int i = 0; i < number_of_predicates; i++) {
+            queue[queue_tail].predicates[i] = predicates[i];
+        }
+
+        add_queue();  
+
+        sem_post(&semQueue);        
+        
+        //lets_go_for_predicates(array, &tables[0], relation_number, predicates, number_of_predicates,checksums,number_of_checksums);
 
        free(checksums);
        free(predicates);
@@ -1650,4 +1674,22 @@ void orderOfPredicates(q* predicates, int number_of_predicates, statistics_array
    free(*query_file);
 
    return;
+ }
+
+
+
+ void* threadFunction(void* args) {
+
+    int* num;
+    if((int)args == 1) {
+      num = malloc(3*sizeof(int));
+      num[0] = 0;
+      num[1] = 1;
+      num[2] = 2;
+    }
+
+    printf("I am %d and num[0] is %d\n", (int)args, num[0]);
+    
+
+    pthread_exit(NULL);
  }

@@ -10,6 +10,8 @@
 #include "mid_list.h"
 #include "join_list.h"
 #include "stats.h"
+#include "queue.h"
+#include <pthread.h>
 
 void take_arguments(int argc,char *argv[],char **file, char **dir,char **query_file);
 int find_relation_number(char *init_file);
@@ -42,6 +44,6 @@ void read_queries(char *query_file,main_array **array,int relation_number, stati
 
 void delete_all_array(main_array **array, int relation_number, char **directory, char **file,char **query_file,statistics_array **stats_array);
 
-
+void* threadFunction(void* args);
 
 #endif

@@ -2,7 +2,10 @@
 #include "function.h"
 #include "structs.h"
 #include "stats.h"
+#include <pthread.h>
+#include <semaphore.h>
 #define DONE "Done"
+#define NUM_OF_THREADS 4
 
 
 
@@ -38,7 +41,49 @@ int main(int argc, char *argv[]){
       rep++;
   }while(strcmp(DONE, done));
 
-  read_queries(query_file,&array,relation_number, &stats_array);
+
+////////////////////////
+  sem_init(&semQueue, 1, 1);
+  create_queue(80);
+
+
+
+  pthread_t *tids;
+  if((tids = malloc(NUM_OF_THREADS * sizeof(pthread_t))) == NULL) {
+      printf("error in malloc\n");
+      exit(1);
+  }
+  int err;
+  for(int i = 0; i < NUM_OF_THREADS; i++) {
+    if(err = pthread_create(tids+i, NULL, threadFunction, (void*)i)) {
+      printf("Error in pthread_create\n");
+      exit(1);
+    }
+  }
+
+
+
+for(int i = 0; i < NUM_OF_THREADS; i++){
+  if(err = pthread_join(*(tids+i), NULL)) {
+    printf("Error in pthread_join\n");
+    exit(1);
+  }
+}
+
+
+read_queries(query_file,&array,relation_number, &stats_array);
+
+for(int i = 0; i < 10; i++) {
+  printf("queuequeryNum is %d\n", queue[i].queryNum);
+  printf("relationA is %d, column A is %d\n", queue[i].predicates[0].relationA, queue[i].predicates[0].columnA);
+}
+
+/////////////////////////////
+
+  
+
+
+
 
   delete_all_array(&array, relation_number, &directory, &workload_file,&query_file,&stats_array);
   return 0;
