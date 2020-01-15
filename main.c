@@ -8,7 +8,6 @@
 #define NUM_OF_THREADS 4
 
 
-
 int main(int argc, char *argv[]){
   char *workload_file, *directory,*query_file, done[20];
   int relation_number;
@@ -43,6 +42,10 @@ int main(int argc, char *argv[]){
 
 
 ////////////////////////
+
+  clock_t time;
+  time = clock();
+
   sem_init(&semQueue, 0, 1);
   create_queue(100);
 
@@ -54,10 +57,8 @@ int main(int argc, char *argv[]){
       printf("error in malloc\n");
       exit(1);
   }
+  
   int err;
-
-  clock_t time1, time2, total_t;
-  time1 = clock();
 
   for(int i = 0; i < NUM_OF_THREADS; i++) {
     if(err = pthread_create(tids+i, NULL, threadFunction, (void*)&array)) {
@@ -74,15 +75,8 @@ for(int i = 0; i < NUM_OF_THREADS; i++){
   }
 }
 
-time2 = clock();
 
-
-total_t = (double)(time2 - time1);
-printf("Total time taken by CPU: %f\n", total_t );
-
-printf("naiiiiiiiiii\n");
-
-
+/*
 for(int i = queue_head; i < queue_tail; i++) {
   //printf("queuequeryNum is %d\n", queue[queue_tail - 1].queryNum);
   //printf("relationA is %d, column A is %d\n", queue[queue_tail - 1].predicates[0].relationA, queue[queue_tail - 1].number_of_predicates);
@@ -91,10 +85,16 @@ for(int i = queue_head; i < queue_tail; i++) {
    free(queue[i].tables);
 } 
 
+*/
+
 delete_queue();
+sem_destroy(&semQueue);
+
+time = clock() - time ;
+printf("Total time taken by CPU: %lf\n", (double) time / CLOCKS_PER_SEC);
 
 /////////////////////////////
-
+  
   delete_all_array(&array, relation_number, &directory, &workload_file,&query_file,&stats_array);
   return 0;
 }
