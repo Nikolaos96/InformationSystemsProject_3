@@ -1717,7 +1717,7 @@ hash_node *hash_table;
    free(query);
 
    return;
- }
+ } 
 
 
 
@@ -1750,45 +1750,60 @@ hash_node *hash_table;
 
 
  void* threadFunction(void* args) {
+    printf("I AM A WORKER\n");
 
     while(1) {
        
 /*
       printf("queue head is %d\n", queue_head);
       printf("queue tail is %d\n", queue_tail);*/
-      
-      sem_wait(&semQueue);
-      if(!queue_empty()) {
 
+      sem_wait(&semQueue);
+      int empty = queue_empty();
+      if(!empty) {
+        //sem_post(&semQueue);
         //sem_wait(&semQueue);
 
         //printf("LETS GOOOO\n");
         
-        //printf("queue head is %d\n", queue_head);
-        //printf("queue tail is %d\n", queue_tail);
+        printf("queue head is %d\n", queue_head);
+        printf("queue tail is %d\n", queue_tail);
 
 
         int number_of_predicates = queue[queue_head].number_of_predicates;
         int relation_number = queue[queue_head].relation_number;
         int number_of_checksums = queue[queue_head].number_of_checksums;
 
+        clock_t time;
+        time  = clock();
+
+
         lets_go_for_predicates((main_array **)args, &queue[queue_head].tables[0], relation_number, queue[queue_head].predicates, number_of_predicates, queue[queue_head].checksums , number_of_checksums);
-        
+/*        int h = 0;
+        for(int f = 0; f < 5000000000; f++) {
+          h++;
+        }*/
+
+        time = clock() - time;
+        printf("time is: %lf\n", (double) time / CLOCKS_PER_SEC);
+        //sem_wait(&semQueue);
         delete_queue();
-
-
         //sem_post(&semQueue);
+
+
+        sem_post(&semQueue);
  
         
       }
       else {
-        sem_post(&semQueue);
+        sem_post(&semQueue); 
         break;
       }
 
-      sem_post(&semQueue);
+      //sem_post(&semQueue);
 
     }
+    //sem_post(&semQueue);
     printf("deleting thread....\n");
     pthread_exit(NULL);
  }

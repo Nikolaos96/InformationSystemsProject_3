@@ -1,5 +1,5 @@
 main: main.o function.o sort_join.o join_list.o mid_list.o HashTable.o hash_t.o queue.o
-	gcc -O2 -pthread main.o function.o sort_join.o join_list.o mid_list.o HashTable.o hash_t.o queue.o -o main
+	gcc -O2  main.o function.o sort_join.o join_list.o mid_list.o HashTable.o hash_t.o queue.o -o main -pthread -lrt
 
 main.o: main.c
 	gcc -O2 -c main.c
