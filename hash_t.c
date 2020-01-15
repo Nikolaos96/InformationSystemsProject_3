@@ -1,60 +1,27 @@
 #include "hash_t.h"
 
 
-
-void dimiourgia(hash_st *table, int size){
-
-    table = malloc(sizeof(hash_st));
-    if(table == NULL){
-        printf("Error malloc hash_t \n");
-	exit(1);
+int is_in_hash_t(hash_node *table, int bucket, int stoixeio){
+    for(int i = 0 ; i < table[bucket].index ; i++){
+        if( table[bucket].order[i] == stoixeio ) return 1;
     }
+    return 0;
+}
 
-    table->hash_point = malloc(size * sizeof(hash_node));
-    if(table->hash_point == NULL){
-        printf("Error malloc table.hash_point   \n");
-	exit(1);
-    }
 
-    for(int i = 0 ; i < size ; i++){
-        table->hash_point[i].order = malloc(size * sizeof(int));
-        if( table->hash_point[i].order == NULL){
-            printf("Error malloc \n");
-	    exit(1);
+int connected(hash_node* table, int s, int j,q* predicates,int number_of_predicates,int flag){
+    int barrier;
+    if(flag)
+      barrier=table[s].index-1;
+    else
+      barrier=table[s].index;
+    for(int i=0;i<barrier;i++){//gia ka8e sxesi pou uparxei sto besttree
+      for(int n=0;n<number_of_predicates;n++){//gia ka8e predicate tou query
+        if((predicates[n].relationA==j && predicates[n].relationB==table[s].order[i]) || (predicates[n].relationA==table[s].order[i] && predicates[n].relationB==j)){
+          if(predicates[n].join)
+            return 1; //connected ama uparxei join kapoias sxesis me to j
         }
-        table->hash_point[i].cost = 0;
-	table->hash_point[i].index = 0;
+      }
     }
-
-}
-
-
-
-
-
-
-
-void eisagwgi_hash_table(hash_st *table, int thesi, int stoixeio){
-    printf("000000000 \n");
-    int index = table->hash_point[thesi].index;
-
-    table->hash_point[thesi].order[index] = stoixeio;
-    table->hash_point[thesi].index++;
-
-    printf("111111111 \n");
-}
-
-
-
-
-
-
-
-
-int is_in_hast_t(hash_st *table, int bucket, int stoixeio){
-
-    for(int i = 0 ; i < table->hash_point[bucket].index ; i++){
-        if( table->hash_point[bucket].order[i] == stoixeio ) return 0;
-    }
-    return 1;
+    return 0;
 }

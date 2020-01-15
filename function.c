@@ -1512,33 +1512,92 @@ void orderOfPredicates(q* predicates, int number_of_predicates, statistics_array
 
 
 
-  //hash_st *hash_table;
-  //dimiourgia(hash_table, relationNum);
-  //for(int i = 0 ; i < relationNum ; i++) eisagwgi_hash_table(hash_table, i, i);
+
+hash_node *hash_table;
+  hash_table = malloc(relationNum * sizeof(hash_node));
+  if(hash_table == NULL){
+      printf("Error malloc hash_t \n");
+      exit(1);
+  }
+  for(int i=0;i < relationNum;i++){
+    hash_table[i].order=malloc(relationNum * sizeof(int));
+    if(hash_table[i].order == NULL){
+      printf("error order malloc\n");
+      exit(1);
+    }
+    hash_table[i].cost=0;
+    hash_table[i].index=0;
+  }
+  for(int i=0;i < relationNum;i++){
+    int index = hash_table[i].index;
+    hash_table[i].order[index] = i;
+    hash_table[i].index++;
+    hash_table[i].cost += stats_array_temp[i].stats[1].Fa;
+  }
 
 
-
-
+ int flag;
   for(int i = 1 ; i < relationNum ; i++){
       for(int s = 0 ; s < relationNum ; s++){
+          flag=0;
           for(int j = 0 ; j < relationNum ; j++){
-//              if( is_in_hast_t(hash_table, s, j) ){
-//	          if(){
-			// einai connexted ???
-//		  }
+              if( is_in_hash_t(hash_table, s, j) || !connected(hash_table, s, j,predicates,number_of_predicates,flag)){//an uparxei to Rj sto S i den einai connected,continue
+                continue;
+              }
+              hash_node t; //besttree+Rj(currtree)
+              t.order = malloc( (i+1) * sizeof(int));
+              if(hash_table[s].index< i+1){//besttree(S')==NULL
+                t.cost = hash_table[s].cost;
+                t.index = hash_table[s].index;
+                for(int q = 0 ; q < t.index ; q++) t.order[q] = hash_table[s].order[q];//t.index=i ara q paei mexri i
 
-		  hash_node t;
-//		  t.order = malloc( (i+1) * sizeof(int));
-//		  t.cost = hash_table->hash_point[s].cost;
-//		  t.index = hash_table->hash_point[s].index;
-  //                for(int q = 0 ; q < t.index ; q++) t.order[i] = hash_table->hash_point[s].order[i];
+                t.order[t.index] = j;
+                t.index++;
+                t.cost += stats_array_temp[j].stats[1].Fa;
+              }
+              if(hash_table[s].index== i+1){
+                t.index=hash_table[s].index;
+                t.cost=0;
+                for(int q=0;q< t.index-1;q++){
+                  t.order[q]= hash_table[s].order[q];
+                  //printf("t.order[%d]=%d\n",q,t.order[q]);
+                  t.cost+=stats_array_temp[t.order[q]].stats[1].Fa;
+                }
+                t.order[t.index-1] = j;
+                t.cost+=stats_array_temp[j].stats[1].Fa;
+              }
 
-//		  t.order[i+1] = j;
-//		  t.cost += stats_array_temp[j].stats[0].Fa;
-//	      }
-	  }
+              if(t.index>hash_table[s].index){//besttree(S')==NULL
+                hash_table[s].cost= t.cost;
+                hash_table[s].index++;
+                for(int q = 0 ; q <= t.index ; q++) {
+                  hash_table[s].order[q]=t.order[q];
+                flag=1;
+                }
+              }
+              else if(t.index==hash_table[s].index){//elegxos kostous
+                if(t.cost < hash_table[s].cost){
+                  hash_table[s].cost= t.cost;
+                  for(int q=0;q<= t.index;q++){
+                    hash_table[s].order[q]=t.order[q];
+                  }
+                }
+
+              }
+          free(t.order);
+         }
       }
-  }
+   }
+   int min_index=0;
+   int min=hash_table[0].cost;
+   for(int i=1;i<relationNum;i++){//return besttree
+     if(hash_table[i].cost<min)
+      min_index=i;
+   }
+   printf("cost=%d\n",hash_table[min_index].cost);
+   for(int i=0;i<relationNum;i++){
+     printf("hash_table[%d].order[%d]=%d\n",min_index,i,hash_table[min_index].order[i]);
+   }
 
 
 
