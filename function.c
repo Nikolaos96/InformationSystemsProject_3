@@ -12,7 +12,7 @@
 #define MAX_N 40000000
 
 
-  
+
  /*
    take arguments from command line and init variables
  */
@@ -1048,13 +1048,13 @@ void take_checksums(checksum_struct *checksums,int number_of_checksums,char* que
 
 
  void lets_go_for_predicates(main_array **array, int *tables, int relation_number, q *predicates, int number_of_predicates,checksum_struct *checksums,int number_of_checksums){
-     
-     ////////////////////////////////////// printing 
+
+     ////////////////////////////////////// printing
       printf("\n");
     /*
      printf("LETS GO, num of preds is %d\n", number_of_predicates);
      printf("queue head is %d\n", queue_head);
-     printf("queue tail is %d\n", queue_tail); 
+     printf("queue tail is %d\n", queue_tail);
      */
 
     ////////////////////////////////
@@ -1500,16 +1500,11 @@ int* orderOfPredicates(q* predicates, int number_of_predicates, statistics_array
             stats_array_temp[relB].stats[j].Da =  Dc * (1 - (1 - Fa1 / Fa) ^ ( Fc / Dc ) );	/////   Dc
 
           }
-
-
       }
 
     }
 
-
   }
-
-
 
 
 
@@ -1597,15 +1592,11 @@ hash_node *hash_table;
 
    int* predicatesOrder = malloc(relationNum * sizeof(int));
 
-   printf("cost=%d\n",hash_table[min_index].cost);
+   //printf("cost=%d\n",hash_table[min_index].cost);
    for(int i=0;i<relationNum;i++){
-     printf("hash_table[%d].order[%d]=%d\n",min_index,i,hash_table[min_index].order[i]);
+     //printf("hash_table[%d].order[%d]=%d\n",min_index,i,hash_table[min_index].order[i]);
      predicatesOrder[i] = hash_table[min_index].order[i];
    }
-
-
-
-
 
 
 
@@ -1614,20 +1605,15 @@ hash_node *hash_table;
           free(stats_array_temp[i].stats[j].Da_array);
       }
       free(stats_array_temp[i].stats);
+      free(hash_table[i].order);
    }
    free(stats_array_temp);
+   free(hash_table);
 
 
 
    return predicatesOrder;
 }
-
-
-
-
-
-
-
 
 
 
@@ -1689,19 +1675,6 @@ hash_node *hash_table;
         predicatesOrder = orderOfPredicates(predicates, number_of_predicates,stats_array, tables, relation_number );
 
 
-
-        printf("\n");
-        for(int g = 0; g < relationNum; g++) {
-          printf(" %d ", predicatesOrder[g]);
-        }
-        printf("\n");
-
-
-
-
-
-
-
         //checksum
         int number_of_checksums=find_checksum_number(query2);
         checksum_struct *checksums = malloc(number_of_checksums * sizeof(checksum_struct));
@@ -1736,22 +1709,23 @@ hash_node *hash_table;
             queue[queue_tail].predicatesOrder[i] = predicatesOrder[i];
         }
 
-        add_queue();  
+        add_queue();
 
-        sem_post(&semQueue);        
-        
+        sem_post(&semQueue);
+
         //lets_go_for_predicates(array, &tables[0], relation_number, predicates, number_of_predicates,checksums,number_of_checksums);
 
        free(checksums);
        free(predicates);
        free(tables);
+       free(predicatesOrder);
    }
 
    fclose(f);
    free(query);
 
    return;
- } 
+ }
 
 
 
@@ -1787,7 +1761,7 @@ hash_node *hash_table;
    // printf("I AM A WORKER\n");
 
     while(1) {
-       
+
 /*
       printf("queue head is %d\n", queue_head);
       printf("queue tail is %d\n", queue_tail);*/
@@ -1799,7 +1773,7 @@ hash_node *hash_table;
         //sem_wait(&semQueue);
 
         //printf("LETS GOOOO\n");
-        
+
        // printf("queue head is %d\n", queue_head);
         //printf("queue tail is %d\n", queue_tail);
 
@@ -1815,24 +1789,24 @@ hash_node *hash_table;
         newPredicates = fixOrderOfPredicates(queue[queue_head].predicates, number_of_predicates, queue[queue_head].predicatesOrder);
 
         for(int d = 0; d < number_of_predicates; d++) {
-            //printf("relA before is %d\n", queue[queue_head].predicates[d].relationA);
-            //printf("relA after is %d\n", newPredicates[d].relationA);
             queue[queue_head].predicates[d].join = newPredicates[d].join;
             queue[queue_head].predicates[d].flag = newPredicates[d].flag;
             queue[queue_head].predicates[d].relationA = newPredicates[d].relationA;
             queue[queue_head].predicates[d].columnA = newPredicates[d].columnA;
             queue[queue_head].predicates[d].columnB = newPredicates[d].columnB;
-            queue[queue_head].predicates[d].relationB = newPredicates[d].relationB; 
+            queue[queue_head].predicates[d].relationB = newPredicates[d].relationB;
+            //printf("relA=%d,colA=%d,relB=%d,colB=%lu,join=%d,flag=%d\n", queue[queue_head].predicates[d].relationA,queue[queue_head].predicates[d].columnA,queue[queue_head].predicates[d].relationB,queue[queue_head].predicates[d].columnB,queue[queue_head].predicates[d].join,queue[queue_head].predicates[d].flag);
+
 
         }
-
-
+        free(newPredicates);
+      /*  printf("\n");
+        for(int g = 0; g < number_of_predicates; g++) {
+          printf(" %d ", queue[queue_head].predicatesOrder[g]);
+        }
+        printf("\n");*/
 
         lets_go_for_predicates((main_array **)args, &queue[queue_head].tables[0], relation_number, queue[queue_head].predicates, number_of_predicates, queue[queue_head].checksums , number_of_checksums);
-/*        int h = 0;
-        for(int f = 0; f < 5000000000; f++) {
-          h++;
-        }*/
 
         time = clock() - time;
         printf("time is: %lf\n", (double) time / CLOCKS_PER_SEC);
@@ -1842,11 +1816,11 @@ hash_node *hash_table;
 
 
         sem_post(&semQueue);
- 
-        
+
+
       }
       else {
-        sem_post(&semQueue); 
+        sem_post(&semQueue);
         break;
       }
 
@@ -1863,6 +1837,7 @@ hash_node *hash_table;
 
 
 q* fixOrderOfPredicates(q *predicates, int number_of_predicates, int* orderOfPredicates) {
+  int counter=0;
   q* newPredicates = malloc(number_of_predicates * sizeof(q));
   bool* predicateIsChecked = malloc(number_of_predicates * sizeof(bool));
   for(int i = 0; i < number_of_predicates; i++) {
@@ -1877,18 +1852,11 @@ q* fixOrderOfPredicates(q *predicates, int number_of_predicates, int* orderOfPre
   }
 
   for(int j = 0; j < number_of_predicates - numOfFilters; j++) {
-    //printf("j is %d\n", j);
     for(int i = 0; i < number_of_predicates - numOfFilters; i++) {
-      //printf("i is %d\n", i);
-      if(predicates[i].join == true) {
 
           if(j == 0) {
-            //printf("j is MHDEN \n");
-            //printf("order[0] is %d\n", orderOfPredicates[0]);
-            //printf("predicates[i].relationA is %d\n", predicates[i].relationA);
-            //printf("predicateIsChecked[i] is %d\n", predicateIsChecked[i]);
+
               if(predicateIsChecked[i] == false && predicates[i].relationA == orderOfPredicates[0] && predicates[i].relationB == orderOfPredicates[1]) {
-                  //printf("j is MHDEN 2 \n");
                   newPredicates[0].join = predicates[i].join;
                   newPredicates[0].flag = predicates[i].flag;
                   newPredicates[0].relationA = predicates[i].relationA;
@@ -1897,20 +1865,20 @@ q* fixOrderOfPredicates(q *predicates, int number_of_predicates, int* orderOfPre
                   newPredicates[0].relationB = predicates[i].relationB;
 
                   predicateIsChecked[i] = true;
-                  //printf("j is MHDEN 3\n");
+                  counter++;
                   break;
               }
               else if(predicateIsChecked[i] == false && predicates[i].relationA == orderOfPredicates[1] && predicates[i].relationB == orderOfPredicates[0]) {
-                  ///printf("j is MHDEN 22 \n");
                   newPredicates[0].join = predicates[i].join;
                   newPredicates[0].flag = predicates[i].flag;
-                  newPredicates[0].relationA = predicates[i].relationB;
-                  newPredicates[0].columnA = predicates[i].columnB;
-                  newPredicates[0].columnB = predicates[i].columnA;
-                  newPredicates[0].relationB = predicates[i].relationA; 
+                  newPredicates[0].relationA = predicates[i].relationA;
+                  newPredicates[0].columnA = predicates[i].columnA;
+                  newPredicates[0].columnB = predicates[i].columnB;
+                  newPredicates[0].relationB = predicates[i].relationB;
 
-                  predicateIsChecked[i] = true;  
-                   //printf("j is MHDEN 33\n");  
+                  predicateIsChecked[i] = true;
+                  counter++;
+
                   break;
               }
           }
@@ -1924,8 +1892,10 @@ q* fixOrderOfPredicates(q *predicates, int number_of_predicates, int* orderOfPre
                       newPredicates[j].relationA = predicates[i].relationA;
                       newPredicates[j].columnA = predicates[i].columnA;
                       newPredicates[j].columnB = predicates[i].columnB;
-                      newPredicates[j].relationB = predicates[i].relationB; 
+                      newPredicates[j].relationB = predicates[i].relationB;
                       predicateIsChecked[i] = true;
+                      counter++;
+
                   }
 
                 }
@@ -1938,26 +1908,42 @@ q* fixOrderOfPredicates(q *predicates, int number_of_predicates, int* orderOfPre
                       newPredicates[j].relationA = predicates[i].relationA;
                       newPredicates[j].columnA = predicates[i].columnA;
                       newPredicates[j].columnB = predicates[i].columnB;
-                      newPredicates[j].relationB = predicates[i].relationB; 
+                      newPredicates[j].relationB = predicates[i].relationB;
                       predicateIsChecked[i] = true;
+                      counter++;
                   }
-                  
+
                 }
               }
 
 
           }
 
-      }
     }
 
   }
+  for(int i=0;i<number_of_predicates-numOfFilters;i++){//pros8etoume ta extra predicates(periptwsi san to proteleutaio query)
+    if(!predicateIsChecked[i]){
+      newPredicates[counter].join = predicates[i].join;
+      newPredicates[counter].flag = predicates[i].flag;
+      newPredicates[counter].relationA = predicates[i].relationA;
+      newPredicates[counter].columnA = predicates[i].columnA;
+      newPredicates[counter].columnB = predicates[i].columnB;
+      newPredicates[counter].relationB = predicates[i].relationB;
+      counter++;
+    }
+  }
 
 
+  /*for(int i=0;i<number_of_predicates-numOfFilters;i++){
+    printf("checked=%d\n",predicateIsChecked[i]);
+    printf("relA=%d,colA=%d,relB=%d,colB=%lu\n", newPredicates[i].relationA,newPredicates[i].columnA,newPredicates[i].relationB,newPredicates[i].columnB);
+  }*/
   for(int i = 0; i < numOfFilters; i++) {
     int index = number_of_predicates + i - numOfFilters;
     newPredicates[index] = predicates[index];
   }
+  free(predicateIsChecked);
 
   return newPredicates;
 }

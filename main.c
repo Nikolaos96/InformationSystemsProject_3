@@ -57,7 +57,7 @@ int main(int argc, char *argv[]){
       printf("error in malloc\n");
       exit(1);
   }
-  
+
   int err;
 
   for(int i = 0; i < NUM_OF_THREADS; i++) {
@@ -83,7 +83,7 @@ for(int i = queue_head; i < queue_tail; i++) {
    free(queue[i].checksums);
    free(queue[i].predicates);
    free(queue[i].tables);
-} 
+}
 
 */
 
@@ -94,7 +94,7 @@ time = clock() - time ;
 printf("Total time taken by CPU: %lf\n", (double) time / CLOCKS_PER_SEC);
 
 /////////////////////////////
-  
+
   delete_all_array(&array, relation_number, &directory, &workload_file,&query_file,&stats_array);
   return 0;
 }
