@@ -16,6 +16,7 @@ typedef struct {
 	int relation_number;
 	checksum_struct *checksums;
 	int number_of_checksums;
+	int* predicatesOrder;
 
 }queueElement;
 

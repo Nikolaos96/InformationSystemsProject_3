@@ -37,7 +37,7 @@ void print_checksums(main_array **array, int *tables,checksum_struct *checksums,
 
 void edit_itermid(main_array **array, int *tables, main_pointer *imid_list, main_pointer *imid_list2, int relA, int colA, int relB, uint64_t colB, int ii);
 
-void orderOfPredicates(q* predicates, int number_of_predicates, statistics_array **stats_array, int* tables, int relation_number);
+int* orderOfPredicates(q* predicates, int number_of_predicates, statistics_array **stats_array, int* tables, int relation_number);
 
 void lets_go_for_predicates(main_array **array, int *tables, int relation_number, q *predicates, int number_of_predicates,checksum_struct *checksums,int number_of_checksums);
 void read_queries(char *query_file,main_array **array,int relation_number, statistics_array **stats_array);
@@ -45,5 +45,7 @@ void read_queries(char *query_file,main_array **array,int relation_number, stati
 void delete_all_array(main_array **array, int relation_number, char **directory, char **file,char **query_file,statistics_array **stats_array);
 
 void* threadFunction(void* args);
+
+q* fixOrderOfPredicates(q *predicates, int number_of_predicates, int* orderOfPredicates);
 
 #endif
