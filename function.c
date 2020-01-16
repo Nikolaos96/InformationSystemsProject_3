@@ -11,6 +11,8 @@
 #define HASH_TABLE_SIZE 10000
 #define MAX_N 40000000
 
+extern int queriesNumber;
+
 
 
  /*
@@ -1631,16 +1633,17 @@ hash_node *hash_table;
    }
 
    int xx =  0;
-   while(getline(&query,&len,f)!= -1){
+   int yy = 0;
+   while(getline(&query,&len,f)!= -1) {
         xx++;
 
         if(!strcmp(query,"F\n")){
             printf("\nEnd of batch.\n\n");
             continue;
         }
-        if(xx < 30 && xx==33) continue;
+        //if(xx < 30 && xx==33) continue;
 
-
+        yy++;
         int *tables = malloc(relation_number * sizeof(int));
         if(tables == NULL){
             printf("Error malloc tables \n");
@@ -1682,7 +1685,13 @@ hash_node *hash_table;
 
         take_checksums(checksums,number_of_checksums,query2);//edw exoume to struct me ta checksums
 
-        sem_wait(&semQueue);
+        pthread_mutex_lock(&mtx);
+
+
+        while (queue_count >= queue_size) {
+          printf(">> Found Buffer Full \n");
+          pthread_cond_wait(&cond_nonfull, &mtx);
+        }
 
         queue[queue_tail].queryNum = xx;
         queue[queue_tail].number_of_predicates = number_of_predicates;
@@ -1711,7 +1720,10 @@ hash_node *hash_table;
 
         add_queue();
 
-        sem_post(&semQueue);
+        pthread_mutex_unlock(&mtx);
+
+
+        pthread_cond_signal(&cond_nonempty);
 
         //lets_go_for_predicates(array, &tables[0], relation_number, predicates, number_of_predicates,checksums,number_of_checksums);
 
@@ -1720,6 +1732,9 @@ hash_node *hash_table;
        free(tables);
        free(predicatesOrder);
    }
+
+   initializeQueriesNumber(yy);
+   
 
    fclose(f);
    free(query);
@@ -1758,25 +1773,24 @@ hash_node *hash_table;
 
 
  void* threadFunction(void* args) {
-   // printf("I AM A WORKER\n");
 
-    while(1) {
+    while(queue_count >= 0) {
 
-/*
-      printf("queue head is %d\n", queue_head);
-      printf("queue tail is %d\n", queue_tail);*/
+      pthread_mutex_lock(&mtx);
 
-      sem_wait(&semQueue);
-      int empty = queue_empty();
-      if(!empty) {
-        //sem_post(&semQueue);
-        //sem_wait(&semQueue);
+      printf("queries num is %d\n", queriesNumber);
+      printf("queries checked is %d\n", queriesChecked);
 
-        //printf("LETS GOOOO\n");
+      if(queriesNumber == queriesChecked) {
+        pthread_mutex_unlock(&mtx);
+        break;
+      }
 
-       // printf("queue head is %d\n", queue_head);
-        //printf("queue tail is %d\n", queue_tail);
-
+      while (queue_count <= 0) {
+        printf(">> Found Buffer Empty \n");
+        pthread_cond_wait(&cond_nonempty, &mtx);
+      }
+      
 
         int number_of_predicates = queue[queue_head].number_of_predicates;
         int relation_number = queue[queue_head].relation_number;
@@ -1800,34 +1814,22 @@ hash_node *hash_table;
 
         }
         free(newPredicates);
-      /*  printf("\n");
-        for(int g = 0; g < number_of_predicates; g++) {
-          printf(" %d ", queue[queue_head].predicatesOrder[g]);
-        }
-        printf("\n");*/
+        int queue_head2 = queue_head;
 
-        lets_go_for_predicates((main_array **)args, &queue[queue_head].tables[0], relation_number, queue[queue_head].predicates, number_of_predicates, queue[queue_head].checksums , number_of_checksums);
+        delete_queue();
+        queriesChecked++;
+
+        pthread_mutex_unlock(&mtx);
+
+        pthread_cond_signal(&cond_nonfull);
+
+        lets_go_for_predicates((main_array **)args, &queue[queue_head2].tables[0], relation_number, queue[queue_head2].predicates, number_of_predicates, queue[queue_head2].checksums , number_of_checksums);
 
         time = clock() - time;
         printf("time is: %lf\n", (double) time / CLOCKS_PER_SEC);
-        //sem_wait(&semQueue);
-        delete_queue();
-        //sem_post(&semQueue);
-
-
-        sem_post(&semQueue);
-
-
-      }
-      else {
-        sem_post(&semQueue);
-        break;
-      }
-
-      //sem_post(&semQueue);
+        
 
     }
-    //sem_post(&semQueue);
     printf("deleting thread....\n");
     pthread_exit(NULL);
  }

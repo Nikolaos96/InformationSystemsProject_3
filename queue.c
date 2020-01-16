@@ -1,13 +1,13 @@
 #include "queue.h"
 #include <stdio.h>
 
-
+extern int queriesNumber;
 
 void create_queue(int size){
      queue_size = size; 
      queue_head = 0;
      queue_tail = 0;
-
+     queue_count = 0;
      queue = malloc(size * sizeof(queueElement));
 
  }
@@ -36,10 +36,16 @@ void create_queue(int size){
 
  void add_queue(void) {
      queue_tail = (queue_tail + 1) % queue_size;
+     queue_count++;
  }
 
 
 
  void delete_queue(void){
      queue_head = (queue_head + 1) % queue_size;
+     queue_count--;
+ }
+
+ void initializeQueriesNumber(int value) {
+     queriesNumber = value;
  }
