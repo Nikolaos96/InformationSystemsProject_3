@@ -33,13 +33,13 @@ void make_Rr1_Rr2(main_array **array, int *tables, q *predicates, int number_of_
 void make_Rr1_Rr2__2(main_array **array, main_pointer *mid_result, int *tables, q *predicates, int number_of_predicates, int jj, relation **Rr1, relation **Rr2, int a,int *sort_needed);
 
 void  make_second_intermid(info_deikti *join_list, main_pointer *imid_list, int size_imid_list, int rel,int rel2, int join_stil_A, int join_stil_B);
-void print_checksums(main_array **array, int *tables,checksum_struct *checksums,int number_of_checksums,main_pointer *imid_list,int imid_index);
+void print_checksums(main_array **array, int *tables,checksum_struct *checksums,int number_of_checksums,main_pointer *imid_list,int imid_index, int index);
 
 void edit_itermid(main_array **array, int *tables, main_pointer *imid_list, main_pointer *imid_list2, int relA, int colA, int relB, uint64_t colB, int ii);
 
 int* orderOfPredicates(q* predicates, int number_of_predicates, statistics_array **stats_array, int* tables, int relation_number);
 
-void lets_go_for_predicates(main_array **array, int *tables, int relation_number, q *predicates, int number_of_predicates,checksum_struct *checksums,int number_of_checksums);
+void lets_go_for_predicates(main_array **array, int *tables, int relation_number, q *predicates, int number_of_predicates,checksum_struct *checksums,int number_of_checksums, int index);
 void read_queries(char *query_file,main_array **array,int relation_number, statistics_array **stats_array);
 
 void delete_all_array(main_array **array, int relation_number, char **directory, char **file,char **query_file,statistics_array **stats_array);

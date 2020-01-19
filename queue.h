@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 
-typedef struct { 
+typedef struct {
 
 	int queryNum;
 	q* predicates;
@@ -18,15 +18,17 @@ typedef struct {
 	int number_of_checksums;
 	int* predicatesOrder;
 
+ 	int * results;
 }queueElement;
 
 sem_t semQueue;
+sem_t pp;
 int queue_size;
 int queue_count;
 int queue_head;
 int queue_tail;
 int queriesChecked;
-queueElement* queue; 
+queueElement* queue;
 
 pthread_cond_t cond_nonempty;
 pthread_cond_t cond_nonfull;

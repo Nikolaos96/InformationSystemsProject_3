@@ -870,7 +870,7 @@ void take_checksums(checksum_struct *checksums,int number_of_checksums,char* que
 
 
 
- void print_checksums(main_array **array, int *tables, checksum_struct *checksums, int number_of_checksums, main_pointer *imid_list, int imid_index){
+ void print_checksums(main_array **array, int *tables, checksum_struct *checksums, int number_of_checksums, main_pointer *imid_list, int imid_index, int index){
 
         int rep = take_columns(&imid_list[imid_index]);
         for(int loop = 0 ; loop < number_of_checksums ; loop++){//gia ka8e checksum
@@ -890,11 +890,16 @@ void take_checksums(checksum_struct *checksums,int number_of_checksums,char* que
                 k += rep;
 	        sum += (*array)[tables[checksums[loop].table]].relation_array[(*array)[tables[checksums[loop].table]].index[checksums[loop].row] + row -1];
             }
-            if(sum==0)
+
+            if(sum==0){
               printf("NULL ");
-            else
+	      queue[index].results[loop] = 0;
+            }else{
               printf("%lu ",sum);
+	      queue[index].results[loop] = sum;
+            }
         }
+
      return;
  }
 
@@ -1049,7 +1054,7 @@ void take_checksums(checksum_struct *checksums,int number_of_checksums,char* que
 
 
 
- void lets_go_for_predicates(main_array **array, int *tables, int relation_number, q *predicates, int number_of_predicates,checksum_struct *checksums,int number_of_checksums){
+ void lets_go_for_predicates(main_array **array, int *tables, int relation_number, q *predicates, int number_of_predicates,checksum_struct *checksums,int number_of_checksums, int index){
 
      ////////////////////////////////////// printing
       printf("\n");
@@ -1221,9 +1226,9 @@ void take_checksums(checksum_struct *checksums,int number_of_checksums,char* que
      }
 
      if(ii==1 || ii==3)
-         print_checksums(array,&tables[0],checksums,number_of_checksums,imid_list,0);
+         print_checksums(array,&tables[0],checksums,number_of_checksums,imid_list,0, index);
      else
-         print_checksums(array,&tables[0],checksums,number_of_checksums,imid_list,1);
+         print_checksums(array,&tables[0],checksums,number_of_checksums,imid_list,1, index);
 
 
 
@@ -1638,6 +1643,7 @@ hash_node *hash_table;
         xx++;
 
         if(!strcmp(query,"F\n")){
+            xx--;
             printf("\nEnd of batch.\n\n");
             continue;
         }
@@ -1685,13 +1691,13 @@ hash_node *hash_table;
 
         take_checksums(checksums,number_of_checksums,query2);//edw exoume to struct me ta checksums
 
-        pthread_mutex_lock(&mtx);
+//        pthread_mutex_lock(&mtx);
 
 
-        while (queue_count >= queue_size) {
-          printf(">> Found Buffer Full \n");
-          pthread_cond_wait(&cond_nonfull, &mtx);
-        }
+//        while (queue_count >= queue_size) {
+//          printf(">> Found Buffer Full \n");
+//          pthread_cond_wait(&cond_nonfull, &mtx);
+//        }
 
         queue[queue_tail].queryNum = xx;
         queue[queue_tail].number_of_predicates = number_of_predicates;
@@ -1701,6 +1707,9 @@ hash_node *hash_table;
         queue[queue_tail].checksums  = malloc(number_of_checksums * sizeof(checksum_struct));
         queue[queue_tail].predicates  = malloc(number_of_predicates * sizeof(q));
         queue[queue_tail].predicatesOrder  = malloc(relationNum * sizeof(int));
+
+        queue[queue_tail].results = malloc(number_of_checksums * sizeof(uint64_t));
+
 
         for(int i = 0; i < relation_number; i++) {
             queue[queue_tail].tables[i] = tables[i];
@@ -1720,10 +1729,10 @@ hash_node *hash_table;
 
         add_queue();
 
-        pthread_mutex_unlock(&mtx);
+//        pthread_mutex_unlock(&mtx);
 
 
-        pthread_cond_signal(&cond_nonempty);
+//        pthread_cond_signal(&cond_nonempty);
 
         //lets_go_for_predicates(array, &tables[0], relation_number, predicates, number_of_predicates,checksums,number_of_checksums);
 
@@ -1734,7 +1743,7 @@ hash_node *hash_table;
    }
 
    initializeQueriesNumber(yy);
-   
+
 
    fclose(f);
    free(query);
@@ -1774,34 +1783,47 @@ hash_node *hash_table;
 
  void* threadFunction(void* args) {
 
-    while(queue_count >= 0) {
 
-      pthread_mutex_lock(&mtx);
 
-      printf("queries num is %d\n", queriesNumber);
-      printf("queries checked is %d\n", queriesChecked);
+    while(queue_count > 0) {
 
-      if(queriesNumber == queriesChecked) {
-        pthread_mutex_unlock(&mtx);
-        break;
-      }
+//      pthread_mutex_lock(&mtx);
+       int queue_head2;
+       int number_of_predicates;
+       int relation_number;
+       int number_of_checksums;
+       clock_t time;
 
-      while (queue_count <= 0) {
-        printf(">> Found Buffer Empty \n");
-        pthread_cond_wait(&cond_nonempty, &mtx);
-      }
-      
+//      printf("queries num is %d\n", queriesNumber);
+//      printf("queries checked is %d\n", queriesChecked);
 
-        int number_of_predicates = queue[queue_head].number_of_predicates;
-        int relation_number = queue[queue_head].relation_number;
-        int number_of_checksums = queue[queue_head].number_of_checksums;
+//      if(queriesNumber == queriesChecked) {
+//        pthread_mutex_unlock(&mtx);
+//        break;
+//      }
 
-        clock_t time;
+//      while (queue_count <= 0) {
+//        printf(">> Found Buffer Empty \n");
+//        pthread_cond_wait(&cond_nonempty, &mtx);
+ //     }
+
+        int aa = 0, xx;
+        sem_wait(&semQueue);
+            if(queue_count > 0){
+                //queue_count--;
+
+
+        number_of_predicates = queue[queue_head].number_of_predicates;
+        relation_number = queue[queue_head].relation_number;
+        number_of_checksums = queue[queue_head].number_of_checksums;
+
+
         time  = clock();
 
         q* newPredicates = malloc(number_of_predicates * sizeof(q));
         newPredicates = fixOrderOfPredicates(queue[queue_head].predicates, number_of_predicates, queue[queue_head].predicatesOrder);
 
+        aa++;
         for(int d = 0; d < number_of_predicates; d++) {
             queue[queue_head].predicates[d].join = newPredicates[d].join;
             queue[queue_head].predicates[d].flag = newPredicates[d].flag;
@@ -1809,28 +1831,34 @@ hash_node *hash_table;
             queue[queue_head].predicates[d].columnA = newPredicates[d].columnA;
             queue[queue_head].predicates[d].columnB = newPredicates[d].columnB;
             queue[queue_head].predicates[d].relationB = newPredicates[d].relationB;
-            //printf("relA=%d,colA=%d,relB=%d,colB=%lu,join=%d,flag=%d\n", queue[queue_head].predicates[d].relationA,queue[queue_head].predicates[d].columnA,queue[queue_head].predicates[d].relationB,queue[queue_head].predicates[d].columnB,queue[queue_head].predicates[d].join,queue[queue_head].predicates[d].flag);
-
-
+//            printf("relA=%d,colA=%d,relB=%d,colB=%lu,join=%d,flag=%d   ", queue[queue_head].predicates[d].relationA,queue[queue_head].predicates[d].columnA,queue[queue_head].predicates[d].relationB,queue[queue_head].predicates[d].columnB,queue[queue_head].predicates[d].join,queue[queue_head].predicates[d].flag);
         }
+        xx = queue[queue_head].queryNum;
+
+        printf("\n");
         free(newPredicates);
-        int queue_head2 = queue_head;
+        queue_head2 = queue_head;
 
         delete_queue();
         queriesChecked++;
 
-        pthread_mutex_unlock(&mtx);
+	}
 
-        pthread_cond_signal(&cond_nonfull);
+	sem_post(&semQueue);
 
-        lets_go_for_predicates((main_array **)args, &queue[queue_head2].tables[0], relation_number, queue[queue_head2].predicates, number_of_predicates, queue[queue_head2].checksums , number_of_checksums);
+
+//      pthread_mutex_unlock(&mtx);
+//      pthread_cond_signal(&cond_nonfull);
+        if( aa )
+            lets_go_for_predicates((main_array **)args, &queue[queue_head2].tables[0], relation_number, queue[queue_head2].predicates, number_of_predicates, queue[queue_head2].checksums , number_of_checksums, queue_head2);
 
         time = clock() - time;
-        printf("time is: %lf\n", (double) time / CLOCKS_PER_SEC);
-        
+        printf(" xx is %d ........   time is: %lf\n", xx, (double) time / CLOCKS_PER_SEC);
+
 
     }
-    printf("deleting thread....\n");
+
+
     pthread_exit(NULL);
  }
 
