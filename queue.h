@@ -5,6 +5,7 @@
 #include "structs.h"
 #include "semaphore.h"
 #include <stdlib.h>
+#include <inttypes.h>
 
 
 typedef struct {
@@ -18,7 +19,7 @@ typedef struct {
 	int number_of_checksums;
 	int* predicatesOrder;
 
- 	int * results;
+ 	uint64_t * results;
 }queueElement;
 
 sem_t semQueue;

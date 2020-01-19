@@ -6,6 +6,7 @@
 #include "HashTable.h"
 #include "hash_t.h"
 #include "queue.h"
+#include <inttypes.h>
 
 #define  BYTEPOS  7
 #define HASH_TABLE_SIZE 10000
@@ -870,7 +871,7 @@ void take_checksums(checksum_struct *checksums,int number_of_checksums,char* que
 
 
 
- void print_checksums(main_array **array, int *tables, checksum_struct *checksums, int number_of_checksums, main_pointer *imid_list, int imid_index, int index){
+ void print_checksums(main_array **array, int *tables, checksum_struct *checksums, int number_of_checksums, main_pointer *imid_list, int imid_index, int headPosition){
 
         int rep = take_columns(&imid_list[imid_index]);
         for(int loop = 0 ; loop < number_of_checksums ; loop++){//gia ka8e checksum
@@ -891,12 +892,13 @@ void take_checksums(checksum_struct *checksums,int number_of_checksums,char* que
 	        sum += (*array)[tables[checksums[loop].table]].relation_array[(*array)[tables[checksums[loop].table]].index[checksums[loop].row] + row -1];
             }
 
-            if(sum==0){
-              printf("NULL ");
-	      queue[index].results[loop] = 0;
-            }else{
-              printf("%lu ",sum);
-	      queue[index].results[loop] = sum;
+            if(sum==0) {
+              //printf("NULL ");
+	            queue[headPosition].results[loop] = 0;
+            }
+            else {
+              //printf("%lu ",sum);
+	            queue[headPosition].results[loop] = sum;
             }
         }
 
@@ -1057,7 +1059,7 @@ void take_checksums(checksum_struct *checksums,int number_of_checksums,char* que
  void lets_go_for_predicates(main_array **array, int *tables, int relation_number, q *predicates, int number_of_predicates,checksum_struct *checksums,int number_of_checksums, int index){
 
      ////////////////////////////////////// printing
-      printf("\n");
+      //printf("\n");
     /*
      printf("LETS GO, num of preds is %d\n", number_of_predicates);
      printf("queue head is %d\n", queue_head);
@@ -1224,7 +1226,7 @@ void take_checksums(checksum_struct *checksums,int number_of_checksums,char* que
 	     }
 	 }
      }
-
+      
      if(ii==1 || ii==3)
          print_checksums(array,&tables[0],checksums,number_of_checksums,imid_list,0, index);
      else
@@ -1835,7 +1837,7 @@ hash_node *hash_table;
         }
         xx = queue[queue_head].queryNum;
 
-        printf("\n");
+        //printf("\n");
         free(newPredicates);
         queue_head2 = queue_head;
 
@@ -1853,7 +1855,7 @@ hash_node *hash_table;
             lets_go_for_predicates((main_array **)args, &queue[queue_head2].tables[0], relation_number, queue[queue_head2].predicates, number_of_predicates, queue[queue_head2].checksums , number_of_checksums, queue_head2);
 
         time = clock() - time;
-        printf(" xx is %d ........   time is: %lf\n", xx, (double) time / CLOCKS_PER_SEC);
+        //printf(" xx is %d ........   time is: %lf\n", xx, (double) time / CLOCKS_PER_SEC);
 
 
     }

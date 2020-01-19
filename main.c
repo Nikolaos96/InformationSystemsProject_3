@@ -4,8 +4,9 @@
 #include "stats.h"
 #include <pthread.h>
 #include <semaphore.h>
+#include <inttypes.h>
 #define DONE "Done"
-#define NUM_OF_THREADS 6
+#define NUM_OF_THREADS 4
 
 int queriesNumber = 10000;
 
@@ -87,15 +88,15 @@ for(int i = 0; i < NUM_OF_THREADS; i++){
 }
 
 
-/*
+
     for(int i = 0; i < queue_tail; i++) {
         int num_of_checks = queue[i].number_of_checksums;
         for(int j = 0 ; j < num_of_checks ; j++){
-	    printf("%lu  ", queue[i].results[j]);
+          printf(" % " PRIu64 , queue[i].results[j]);
         }
         printf("\n");
     }
-*/
+
 
 
 for(int i = 0; i < queue_tail; i++) {
